@@ -253,8 +253,7 @@ services:
 - 🐛 **Bug Reports**: [GitHub Issues](https://github.com/devonuryilmaz/GrowthTracker/issues)
 - 💡 **Feature Requests**: [GitHub Discussions](https://github.com/devonuryilmaz/GrowthTracker/discussions)
 - 📧 **Email**: onuryilmaz.cbu@gmail.com
-- 💬 **LinkedIn**: [linkedin.com/in/onuryilmazdev](https://linkedin.com/in/onuryilmazdev)
-- 🐦 **Twitter/X**: [@devonuryilmaz](https://twitter.com/devonuryilmaz)
+- 💬 **LinkedIn**: [linkedin.com/in/onuryilmaz52](https://www.linkedin.com/in/onuryilmaz52)
 
 ## 📄 Lisans
 
@@ -272,7 +271,5 @@ Bu proje [MIT License](LICENSE) altında lisanslanmıştır.
 <div align="center">
 
 **⭐ Bu projeyi beğendiyseniz yıldız vermeyi unutmayın! ⭐**
-
-[🌐 Live Demo](https://growthtracker.example.com) | [📚 Documentation](https://docs.growthtracker.example.com) | [🎯 Roadmap](https://github.com/kullanici/GrowthTracker/projects)
 
 </div>
