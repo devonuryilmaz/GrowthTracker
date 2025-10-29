@@ -1,8 +1,10 @@
 using GrowthTracker.API.BackgroundServices;
 using GrowthTracker.API.Data;
 using GrowthTracker.API.Services;
+using GrowtTracker.API.BackgroundServices;
+using GrowtTracker.API.Services;
 using Hangfire;
-using Hangfire.MemoryStorage;
+using Hangfire.PostgreSql;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -34,14 +36,17 @@ builder.Services.AddHttpClient<NotificationService>();
 
 // Background services'ı DI container'a ekle
 builder.Services.AddScoped<ReminderJob>();
+builder.Services.AddScoped<AIGeneratorJob>();
 
-builder.Services.AddHangfire(config =>
-{
-    config.SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
-          .UseSimpleAssemblyNameTypeSerializer()
-          .UseRecommendedSerializerSettings()
-          .UseMemoryStorage();
-});
+builder.Services.AddScoped<OpenAIService>();
+
+builder.Services.AddHangfire(config => config
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UsePostgreSqlStorage(options => options.UseNpgsqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")))
+);
+
 builder.Services.AddHangfireServer();
 
 var app = builder.Build();
@@ -62,6 +67,16 @@ app.UseCors("AllowAll");
 app.UseHangfireDashboard();
 
 app.MapControllers();
+
+
+using (var scope = app.Services.CreateScope())
+{
+    var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+    recurringJobManager.AddOrUpdate<AIGeneratorJob>(
+        "GenerateAITasks",
+        job => job.GenerateTasksAsync(),
+        Cron.Daily);
+}
 
 // // Uygulama başlatıldıktan sonra recurring job'ı kur
 // using (var scope = app.Services.CreateScope())
