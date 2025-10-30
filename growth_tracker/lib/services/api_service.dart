@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:growth_tracker/models/reminder.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -32,6 +33,28 @@ class ApiService {
 
     if (response.statusCode != 201) {
       throw Exception('Failed to add reminder');
+    }
+  }
+
+  Future<void> sendTokenToServer(String token, String platform) async {
+    final url = Uri.parse('$baseUrl/device_token');
+    final body = jsonEncode({
+      'deviceId': '',
+      'platform': platform,
+      'token': token,
+    });
+
+    try {
+      final response = await http.post(url,
+          headers: {"Content-Type": "application/json"}, body: body);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        print('Token sent successfully to server.');
+      } else {
+        print(
+            'Failed to send token to server. Status code: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error sending token to server: $e');
     }
   }
 }

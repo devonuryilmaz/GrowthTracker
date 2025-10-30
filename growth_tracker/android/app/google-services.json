@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "452024911917",
+    "project_id": "growthtracker-b6e35",
+    "storage_bucket": "growthtracker-b6e35.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:452024911917:android:faf3aed592dea4ce11d0a4",
+        "android_client_info": {
+          "package_name": "com.devonuryilmaz.growthtracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCtkzhsmdQR7xMjtR0CMjMCBz2C1HlMfG8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

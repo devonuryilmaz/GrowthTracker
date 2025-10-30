@@ -17,18 +17,20 @@ public class OpenAIService
 
     public async Task<string> GenerateTaskSuggestionsAsync()
     {
-        var chatResponse = await _openAIClient.GetChatClient("gpt-4o-mini")
+        var chatResponse = await _openAIClient.GetChatClient("gpt-4o")
             .CompleteChatAsync(
                 messages: new List<ChatMessage>
                 {
-                    ChatMessage.CreateSystemMessage("You are a helpful AI assistant that suggests short tasks."),
-                    ChatMessage.CreateUserMessage("Suggest one small daily programming task for a full stack developer.")
+                    ChatMessage.CreateSystemMessage(@"You are a creative AI assistant that suggests small, practical, and varied programming challenges for backend developers. 
+                    Each task should take less than one hour and cover diverse topics such as APIs, databases, optimization, debugging, testing, 
+                    security, or architecture. Avoid repeating similar ideas and ensure the output feels fresh each time."),
+                    ChatMessage.CreateUserMessage("Suggest one short and realistic backend programming task with a brief description.")
                 },
                 options: new ChatCompletionOptions
                 {
-                    Temperature = 0.7f,
-                    MaxOutputTokenCount = 150,
- 
+                    Temperature = 0.8f,
+                    MaxOutputTokenCount = 200,
+
                 }
             );
 
