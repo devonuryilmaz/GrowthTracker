@@ -1,7 +1,6 @@
 using System;
 using Microsoft.EntityFrameworkCore;
-using GrowthTracker.API.Models;
-using GrowtTracker.API.Models;
+using GrowthTracker.API.Entity;
 
 namespace GrowthTracker.API.Data;
 
@@ -13,5 +12,6 @@ public class AppDbContext : DbContext
 
     public DbSet<Reminder> Reminders { get; set; }
     public DbSet<DailyTask> DailyTasks { get; set; }
+    public DbSet<DeviceToken> DeviceTokens { get; set; }
 }
 

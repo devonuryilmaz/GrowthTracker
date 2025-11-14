@@ -1,8 +1,7 @@
-using GrowtTracker.API.Services;
-using Microsoft.AspNetCore.Http;
+using GrowthTracker.API.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace GrowtTracker.API.Controllers
+namespace GrowthTracker.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -43,12 +44,13 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
+    initFCM();
   }
 
   Future<void> initFCM() async {
     final messaging = FirebaseMessaging.instance;
     final ApiService apiService = ApiService();
-    final String platform = Theme.of(context).platform.toString();
+    final String platform = Platform.isAndroid ? 'Android' : 'iOS'; // Bu satırı değiştirin
 
     NotificationSettings settings = await messaging.requestPermission(
         alert: true, badge: true, sound: true, provisional: false);
@@ -71,7 +73,7 @@ class _MyAppState extends State<MyApp> {
                 channel.id,
                 channel.name,
                 channelDescription: channel.description,
-                icon: android?.smallIcon,
+                icon: '@mipmap/ic_launcher', // Bunu ekleyin veya kendi ikonunuzun adını yazın
               ),
               iOS: const DarwinNotificationDetails(),
             ),

@@ -2,7 +2,7 @@ using System;
 using OpenAI;
 using OpenAI.Chat;
 
-namespace GrowtTracker.API.Services;
+namespace GrowthTracker.API.Services;
 
 public class OpenAIService
 {

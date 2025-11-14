@@ -1,5 +1,5 @@
 using GrowthTracker.API.Data;
-using GrowthTracker.API.Models;
+using GrowthTracker.API.Entity;
 using GrowthTracker.API.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

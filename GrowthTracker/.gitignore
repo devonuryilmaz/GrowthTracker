@@ -957,3 +957,6 @@ appsettings.Staging.json
 # Docker
 .dockerignore
 Dockerfile.prod
+
+# Secrets
+Secrets/

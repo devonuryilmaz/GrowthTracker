@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:growth_tracker/models/reminder.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:growth_tracker/helper/helper.dart';
 
 class ApiService {
   // API service methods will be implemented here
@@ -37,11 +38,16 @@ class ApiService {
   }
 
   Future<void> sendTokenToServer(String token, String platform) async {
-    final url = Uri.parse('$baseUrl/device_token');
+    final url = Uri.parse('$baseUrl/deviceToken');
+    
+    // Cihaz ID'sini helper'dan al
+    String deviceId = await getDeviceId();
+    
     final body = jsonEncode({
-      'deviceId': '',
-      'platform': platform,
+      'userId': null,
+      'deviceId': deviceId,
       'token': token,
+      'platform': platform,
     });
 
     try {

@@ -1,6 +1,6 @@
 using System;
 
-namespace GrowtTracker.API.Models;
+namespace GrowthTracker.API.Entity;
 
 public class DailyTask
 {

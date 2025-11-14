@@ -1,8 +1,7 @@
 using GrowthTracker.API.BackgroundServices;
 using GrowthTracker.API.Data;
+using GrowthTracker.API.Interfaces;
 using GrowthTracker.API.Services;
-using GrowtTracker.API.BackgroundServices;
-using GrowtTracker.API.Services;
 using Hangfire;
 using Hangfire.PostgreSql;
 using Microsoft.EntityFrameworkCore;
@@ -39,6 +38,8 @@ builder.Services.AddScoped<ReminderJob>();
 builder.Services.AddScoped<AIGeneratorJob>();
 
 builder.Services.AddScoped<OpenAIService>();
+builder.Services.AddScoped<IFirebaseService, FirebaseService>();
+builder.Services.AddScoped<IDeviceTokenService, DeviceTokenService>();
 
 builder.Services.AddHangfire(config => config
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)

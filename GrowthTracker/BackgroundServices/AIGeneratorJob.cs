@@ -1,9 +1,9 @@
 using System;
 using GrowthTracker.API.Data;
-using GrowtTracker.API.Models;
-using GrowtTracker.API.Services;
+using GrowthTracker.API.Entity;
+using GrowthTracker.API.Services;
 
-namespace GrowtTracker.API.BackgroundServices;
+namespace GrowthTracker.API.BackgroundServices;
 
 public class AIGeneratorJob
 {

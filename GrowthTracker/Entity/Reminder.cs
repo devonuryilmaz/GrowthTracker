@@ -1,6 +1,6 @@
 using System;
 
-namespace GrowthTracker.API.Models;
+namespace GrowthTracker.API.Entity;
 
 public class Reminder
 {
