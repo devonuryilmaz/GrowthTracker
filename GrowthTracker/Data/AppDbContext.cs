@@ -13,5 +13,6 @@ public class AppDbContext : DbContext
     public DbSet<Reminder> Reminders { get; set; }
     public DbSet<DailyTask> DailyTasks { get; set; }
     public DbSet<DeviceToken> DeviceTokens { get; set; }
+    public DbSet<User> Users { get; set; }
 }
 

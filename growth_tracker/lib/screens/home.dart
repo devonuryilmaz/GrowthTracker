@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:growth_tracker/services/notification_service.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/reminder.dart';
 import '../services/api_service.dart';
@@ -19,12 +20,26 @@ class _HomeScreenState extends State<HomeScreen> {
   bool isLoading = false;
   Timer? _timer;
 
+  String _userName = '';
+  String _userJob = '';
+  int _userAge = 0;
+
   @override
   void initState() {
     super.initState();
+    _loadUserInfo();
     fetchReminders();
 
     _timer = Timer.periodic(Duration(seconds: 1), (_) => checkReminders());
+  }
+
+  Future<void> _loadUserInfo() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _userName = prefs.getString('user_name') ?? '';
+      _userJob = prefs.getString('user_job') ?? '';
+      _userAge = prefs.getInt('user_age') ?? 0;
+    });
   }
 
   @override
@@ -96,7 +111,16 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Upcoming Reminders')),
+      appBar: AppBar(title: const Text('Growth Tracker'),
+      actions: [
+        IconButton(icon: const Icon(Icons.logout), onPressed: () async {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.clear();
+          if (mounted) {
+            Navigator.of(context).pushReplacementNamed('/login');
+          }
+        })
+      ],),
       body: RefreshIndicator(
         onRefresh: fetchReminders,
         child: isLoading

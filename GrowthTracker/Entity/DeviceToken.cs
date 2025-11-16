@@ -11,4 +11,5 @@ public class DeviceToken
     public string Platform { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
+    public virtual User User { get; set; }
 }

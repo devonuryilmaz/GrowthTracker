@@ -1,3 +1,4 @@
+using GrowthTracker.API.Interfaces;
 using GrowthTracker.API.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,16 +9,24 @@ namespace GrowthTracker.API.Controllers
     public class AIController : ControllerBase
     {
         private readonly OpenAIService _openAIService;
-
-        public AIController(OpenAIService openAIService)
+        private readonly IUserService _userService;
+        public AIController(OpenAIService openAIService, IUserService userService)
         {
             _openAIService = openAIService;
+            _userService = userService;
         }
 
         [HttpGet("suggest")]
-        public async Task<IActionResult> GetTaskSuggestion()
+        public async Task<IActionResult> GetTaskSuggestion(Guid userId)
         {
-            var suggestion = await _openAIService.GenerateTaskSuggestionsAsync();
+            var user = await _userService.GetUserById(userId);
+            
+            if (user == null)
+            {
+                return NotFound("User not found.");
+            }
+
+            var suggestion = await _openAIService.GenerateTaskSuggestionsAsync(user);
 
             if (string.IsNullOrEmpty(suggestion))
             {
