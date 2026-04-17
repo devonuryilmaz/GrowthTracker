@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Cognitive Sanctuary - Focus</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Manrope:wght@500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#00628c",
+                    "primary-container": "#9396ff",
+                    "on-background": "#302950",
+                    "error": "#b41340",
+                    "inverse-primary": "#8083ff",
+                    "error-container": "#f74b6d",
+                    "secondary-fixed": "#a4d8ff",
+                    "on-surface": "#302950",
+                    "on-primary-fixed-variant": "#0e009d",
+                    "on-tertiary-fixed": "#39000b",
+                    "on-primary": "#f4f1ff",
+                    "surface-bright": "#faf4ff",
+                    "on-secondary-fixed-variant": "#00567c",
+                    "on-error-container": "#510017",
+                    "tertiary-fixed-dim": "#ff7986",
+                    "background": "#faf4ff",
+                    "primary-fixed-dim": "#8387ff",
+                    "surface-container-highest": "#e1d8ff",
+                    "on-primary-fixed": "#000000",
+                    "surface-container-low": "#f4eeff",
+                    "on-secondary-fixed": "#003853",
+                    "surface-dim": "#d8ceff",
+                    "error-dim": "#a70138",
+                    "surface-tint": "#4647d3",
+                    "surface-container-lowest": "#ffffff",
+                    "on-secondary-container": "#004c6f",
+                    "on-tertiary": "#ffefef",
+                    "tertiary": "#b80438",
+                    "inverse-on-surface": "#a097c5",
+                    "surface": "#faf4ff",
+                    "secondary-dim": "#00557b",
+                    "on-error": "#ffefef",
+                    "tertiary-dim": "#a20030",
+                    "primary": "#4647d3",
+                    "inverse-surface": "#0f072e",
+                    "primary-dim": "#3939c7",
+                    "primary-fixed": "#9396ff",
+                    "on-tertiary-fixed-variant": "#780021",
+                    "surface-variant": "#e1d8ff",
+                    "on-tertiary-container": "#68001b",
+                    "tertiary-container": "#ff9099",
+                    "secondary-container": "#a4d8ff",
+                    "on-primary-container": "#0a0081",
+                    "secondary-fixed-dim": "#81ccff",
+                    "tertiary-fixed": "#ff9099",
+                    "surface-container": "#ece4ff",
+                    "outline": "#79719d",
+                    "on-secondary": "#e9f4ff",
+                    "surface-container-high": "#e6deff",
+                    "outline-variant": "#b0a7d6",
+                    "on-surface-variant": "#5e5680"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            backdrop-filter: blur(20px) saturate(180%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#faf4ff]/70 dark:bg-[#302950]/70 backdrop-blur-xl flex justify-between items-center px-6 py-4 w-full">
+<div class="flex items-center gap-3 scale-95 transition-transform duration-200 cursor-pointer">
+<span class="material-symbols-outlined text-[#6366F1] dark:text-[#9396ff]">bubble_chart</span>
+<h1 class="text-xl font-bold text-[#302950] dark:text-[#faf4ff] font-manrope">Cognitive Sanctuary</h1>
+</div>
+<div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant/10">
+<img alt="Profile" class="w-full h-full object-cover" data-alt="high-end editorial portrait of a calm woman in soft lighting with lavender background tones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDfeUzq1E-ttX5sYUZ-5TllPmGpCHV04v6xa9HLz2-V8Pu6cx7H7eh1Rw0V8Nyt2keOSh_G7IxPfEYRkRBi_gR0NKqrxUhYgCgwF7UpaR0aDIYwzKBX-E0djlNsavCxZZR8m5iw6Eqg0xUZID2773UGwfqDXrG5IJYnFklRkCwVn1AdJhagYwwkzx7fe7-8BtJsEeSSRgaMUNm9QMYdg6weRo7we4RwnHOClBG3R6ncoMSCryIt3EHvi0QYFTs_f_tdX7cqY0vMDiU"/>
+</div>
+</header>
+<main class="pt-24 px-6 max-w-2xl mx-auto space-y-8">
+<!-- Welcome Section -->
+<section class="space-y-1">
+<p class="font-label text-sm uppercase tracking-[0.2em] text-on-surface-variant/70 font-semibold">Active Session</p>
+<h2 class="font-headline text-4xl font-extrabold tracking-tight text-on-surface">Deep Focus Flow</h2>
+</section>
+<!-- Active Task High-Focus Card -->
+<div class="relative group">
+<div class="absolute -inset-1 bg-gradient-to-tr from-primary to-secondary rounded-[2rem] blur opacity-10 group-hover:opacity-20 transition duration-1000"></div>
+<div class="relative bg-surface-container-lowest rounded-[2rem] p-8 space-y-8 border border-outline-variant/5 shadow-sm">
+<div class="flex justify-between items-start">
+<div class="space-y-4 max-w-[70%]">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container text-primary font-label text-xs font-bold uppercase tracking-wider">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">bolt</span>
+                            High Intensity
+                        </div>
+<h3 class="font-headline text-3xl font-bold leading-tight">Strategic Growth Planning</h3>
+<p class="text-on-surface-variant leading-relaxed">Map out the quarterly expansion nodes and refine the internal cognitive framework for the next phase of development.</p>
+</div>
+<div class="w-20 h-20 rounded-2xl bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-4xl text-primary" style="font-variation-settings: 'FILL' 1;">auto_graph</span>
+</div>
+</div>
+<!-- Timer / Progress Visualization -->
+<div class="space-y-4">
+<div class="flex justify-between items-end">
+<div class="font-headline text-5xl font-extrabold tracking-tighter tabular-nums">42:15</div>
+<div class="text-right">
+<span class="block font-label text-xs font-bold text-on-surface-variant/60 uppercase">Est. Completion</span>
+<span class="font-headline font-bold text-on-surface">11:45 AM</span>
+</div>
+</div>
+<div class="h-3 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary to-primary-container w-2/3 rounded-full relative">
+<div class="absolute inset-0 bg-white/10 mix-blend-overlay"></div>
+</div>
+</div>
+</div>
+<!-- Done Button (Celebration Trigger) -->
+<button class="w-full py-5 bg-gradient-to-r from-[#4647d3] to-[#9396ff] rounded-2xl text-on-primary font-headline text-lg font-bold shadow-xl shadow-primary/20 flex items-center justify-center gap-3 scale-100 active:scale-95 transition-all duration-300">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                    Mark as Done
+                </button>
+</div>
+</div>
+<!-- Daily Progress Section -->
+<section class="bg-surface-container-low rounded-[1.5rem] p-6 space-y-6">
+<div class="flex justify-between items-center">
+<h4 class="font-headline font-bold text-xl">Daily Trajectory</h4>
+<div class="text-secondary font-label text-sm font-bold">75% Growth</div>
+</div>
+<!-- Asymmetric Progress Grid -->
+<div class="grid grid-cols-12 gap-3 h-2">
+<div class="col-span-3 bg-primary rounded-full h-full"></div>
+<div class="col-span-4 bg-primary-container rounded-full h-full"></div>
+<div class="col-span-2 bg-secondary rounded-full h-full"></div>
+<div class="col-span-3 bg-surface-container-highest rounded-full h-full opacity-50"></div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-lowest p-4 rounded-xl space-y-1">
+<span class="block font-label text-[10px] uppercase font-bold text-on-surface-variant/60">Time Invested</span>
+<span class="font-headline font-extrabold text-xl">5.4 hrs</span>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-xl space-y-1">
+<span class="block font-label text-[10px] uppercase font-bold text-on-surface-variant/60">Rest Available</span>
+<span class="font-headline font-extrabold text-xl text-tertiary">2.5 hrs</span>
+</div>
+</div>
+</section>
+<!-- Contextual Insight (Bento Style) -->
+<section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="bg-surface-container-lowest p-6 rounded-[1.5rem] flex flex-col justify-between h-40 border border-outline-variant/5">
+<span class="material-symbols-outlined text-primary text-3xl">lightbulb</span>
+<div>
+<h5 class="font-headline font-bold text-lg">Focus Peak</h5>
+<p class="text-on-surface-variant text-sm">Your cognitive clarity is at 94% right now.</p>
+</div>
+</div>
+<div class="bg-secondary-container/30 p-6 rounded-[1.5rem] flex flex-col justify-between h-40 border border-secondary-container/10">
+<span class="material-symbols-outlined text-secondary text-3xl">waves</span>
+<div>
+<h5 class="font-headline font-bold text-lg">Next: Breathe</h5>
+<p class="text-on-secondary-container text-sm">A 5-min recharge is scheduled in 15 mins.</p>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-3 bg-[#f4eeff]/80 dark:bg-[#1a1625]/80 backdrop-blur-2xl rounded-t-[1.5rem] z-50 shadow-[0_-4px_20px_rgba(48,41,80,0.05)]">
+<!-- Home (Active) -->
+<a class="flex flex-col items-center justify-center bg-[#ffffff] dark:bg-[#302950] text-[#6366F1] dark:text-[#9396ff] rounded-2xl px-5 py-2 shadow-sm scale-98 transition-all duration-300" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-inter text-[10px] font-semibold uppercase tracking-wider mt-1">Home</span>
+</a>
+<!-- Discovery -->
+<a class="flex flex-col items-center justify-center text-[#302950]/50 dark:text-[#faf4ff]/50 px-5 py-2 hover:text-[#6366F1] dark:hover:text-[#9396ff] active:scale-95 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">explore</span>
+<span class="font-inter text-[10px] font-semibold uppercase tracking-wider mt-1">Discovery</span>
+</a>
+<!-- Journey -->
+<a class="flex flex-col items-center justify-center text-[#302950]/50 dark:text-[#faf4ff]/50 px-5 py-2 hover:text-[#6366F1] dark:hover:text-[#9396ff] active:scale-95 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">auto_graph</span>
+<span class="font-inter text-[10px] font-semibold uppercase tracking-wider mt-1">Journey</span>
+</a>
+<!-- Settings -->
+<a class="flex flex-col items-center justify-center text-[#302950]/50 dark:text-[#faf4ff]/50 px-5 py-2 hover:text-[#6366F1] dark:hover:text-[#9396ff] active:scale-95 transition-all duration-300" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-inter text-[10px] font-semibold uppercase tracking-wider mt-1">Settings</span>
+</a>
+</nav>
+</body></html>

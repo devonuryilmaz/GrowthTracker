@@ -10,30 +10,31 @@ namespace GrowthTracker.API.Controllers
     {
         private readonly OpenAIService _openAIService;
         private readonly IUserService _userService;
+
         public AIController(OpenAIService openAIService, IUserService userService)
         {
             _openAIService = openAIService;
             _userService = userService;
         }
 
-        [HttpGet("suggest")]
-        public async Task<IActionResult> GetTaskSuggestion(Guid userId)
+        /// <summary>
+        /// Kullanıcı için AI ile 3 görev önerisi üretir.
+        /// </summary>
+        [HttpGet("suggestions")]
+        public async Task<IActionResult> GetTaskSuggestions([FromQuery] Guid userId)
         {
             var user = await _userService.GetUserById(userId);
-            
+
             if (user == null)
-            {
                 return NotFound("User not found.");
-            }
 
-            var suggestion = await _openAIService.GenerateTaskSuggestionsAsync(user);
+            var suggestions = await _openAIService.GenerateTaskSuggestionsAsync(user);
 
-            if (string.IsNullOrEmpty(suggestion))
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, "Failed to generate task suggestion.");
-            }
+            if (suggestions.Count == 0)
+                return StatusCode(StatusCodes.Status500InternalServerError, "Failed to generate task suggestions.");
 
-            return Ok(new { TaskSuggestion = suggestion });
+            return Ok(suggestions);
         }
     }
 }
+

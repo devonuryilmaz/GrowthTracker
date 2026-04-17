@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Cognitive Sanctuary | Begin Your Journey</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#00628c",
+                        "primary-container": "#9396ff",
+                        "on-background": "#302950",
+                        "error": "#b41340",
+                        "inverse-primary": "#8083ff",
+                        "error-container": "#f74b6d",
+                        "secondary-fixed": "#a4d8ff",
+                        "on-surface": "#302950",
+                        "on-primary-fixed-variant": "#0e009d",
+                        "on-tertiary-fixed": "#39000b",
+                        "on-primary": "#f4f1ff",
+                        "surface-bright": "#faf4ff",
+                        "on-secondary-fixed-variant": "#00567c",
+                        "on-error-container": "#510017",
+                        "tertiary-fixed-dim": "#ff7986",
+                        "background": "#faf4ff",
+                        "primary-fixed-dim": "#8387ff",
+                        "surface-container-highest": "#e1d8ff",
+                        "on-primary-fixed": "#000000",
+                        "surface-container-low": "#f4eeff",
+                        "on-secondary-fixed": "#003853",
+                        "surface-dim": "#d8ceff",
+                        "error-dim": "#a70138",
+                        "surface-tint": "#4647d3",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-container": "#004c6f",
+                        "on-tertiary": "#ffefef",
+                        "tertiary": "#b80438",
+                        "inverse-on-surface": "#a097c5",
+                        "surface": "#faf4ff",
+                        "secondary-dim": "#00557b",
+                        "on-error": "#ffefef",
+                        "tertiary-dim": "#a20030",
+                        "primary": "#4647d3",
+                        "inverse-surface": "#0f072e",
+                        "primary-dim": "#3939c7",
+                        "primary-fixed": "#9396ff",
+                        "on-tertiary-fixed-variant": "#780021",
+                        "surface-variant": "#e1d8ff",
+                        "on-tertiary-container": "#68001b",
+                        "tertiary-container": "#ff9099",
+                        "secondary-container": "#a4d8ff",
+                        "on-primary-container": "#0a0081",
+                        "secondary-fixed-dim": "#81ccff",
+                        "tertiary-fixed": "#ff9099",
+                        "surface-container": "#ece4ff",
+                        "outline": "#79719d",
+                        "on-secondary": "#e9f4ff",
+                        "surface-container-high": "#e6deff",
+                        "outline-variant": "#b0a7d6",
+                        "on-surface-variant": "#5e5680"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #faf4ff; color: #302950; }
+        .font-manrope { font-family: 'Manrope', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .glass-panel { backdrop-filter: saturate(180%) blur(20px); }
+        .gradient-primary { background: linear-gradient(135deg, #4647d3 0%, #9396ff 100%); }
+        .inner-glow { box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1); }
+        .asymmetric-grid { grid-template-columns: 1.2fr 1fr; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface selection:bg-primary-container selection:text-on-primary-container">
+<!-- Top Navigation (Contextually Suppressed for focused Onboarding, showing only Brand Anchor) -->
+<header class="fixed top-0 w-full z-50 bg-[#faf4ff]/70 backdrop-blur-xl flex justify-between items-center px-6 py-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#6366F1] text-2xl">bubble_chart</span>
+<span class="text-xl font-bold text-[#302950] font-manrope tracking-tight">Cognitive Sanctuary</span>
+</div>
+<div class="text-on-surface-variant/60 font-medium text-sm">
+            Step 1 of 2
+        </div>
+</header>
+<main class="min-h-screen pt-24 pb-12 px-6 max-w-6xl mx-auto flex flex-col items-center">
+<!-- Welcome Section -->
+<section class="w-full text-center mb-16">
+<h1 class="text-on-surface font-headline font-extrabold text-5xl md:text-6xl tracking-tight mb-4">
+                Define your <span class="text-primary">presence</span>.
+            </h1>
+<p class="text-on-surface-variant text-lg max-w-xl mx-auto">
+                Before we begin, help us curate your mental landscape with a few simple details.
+            </p>
+</section>
+<div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+<!-- Step 1: Personal Identity (Left Column) -->
+<div class="lg:col-span-5 space-y-8">
+<div class="bg-surface-container-low rounded-[2rem] p-8 space-y-6">
+<h2 class="text-on-surface font-headline font-bold text-2xl">Personal Identity</h2>
+<div class="space-y-4">
+<div class="space-y-2">
+<label class="text-on-surface-variant font-medium text-sm ml-1">What should we call you?</label>
+<input class="w-full bg-surface-container-lowest border-none ring-1 ring-outline-variant/20 focus:ring-2 focus:ring-primary rounded-xl px-4 py-3 outline-none transition-all placeholder:text-on-surface-variant/30" placeholder="Full Name" type="text"/>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-2">
+<label class="text-on-surface-variant font-medium text-sm ml-1">Age</label>
+<input class="w-full bg-surface-container-lowest border-none ring-1 ring-outline-variant/20 focus:ring-2 focus:ring-primary rounded-xl px-4 py-3 outline-none transition-all" placeholder="25" type="number"/>
+</div>
+<div class="space-y-2">
+<label class="text-on-surface-variant font-medium text-sm ml-1">Timezone</label>
+<select class="w-full bg-surface-container-lowest border-none ring-1 ring-outline-variant/20 focus:ring-2 focus:ring-primary rounded-xl px-4 py-3 outline-none transition-all appearance-none text-on-surface-variant">
+<option>UTC-5 (EST)</option>
+<option>UTC+0 (GMT)</option>
+</select>
+</div>
+</div>
+<div class="space-y-2">
+<label class="text-on-surface-variant font-medium text-sm ml-1">Your Profession</label>
+<input class="w-full bg-surface-container-lowest border-none ring-1 ring-outline-variant/20 focus:ring-2 focus:ring-primary rounded-xl px-4 py-3 outline-none transition-all" placeholder="Creative Architect, Developer, etc." type="text"/>
+</div>
+</div>
+</div>
+<!-- Abstract Decorative Card -->
+<div class="relative overflow-hidden h-48 rounded-[2rem] bg-inverse-surface group">
+<div class="absolute inset-0 bg-gradient-to-br from-primary/40 to-transparent z-10"></div>
+<img class="absolute inset-0 w-full h-full object-cover opacity-50 transition-transform duration-700 group-hover:scale-110" data-alt="abstract flowing 3D organic shapes with soft iridescent purple and blue lighting on dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrrAdep4DiAbzaK0iLmSAP0ny6TiEf4FBi8A63qVA9yFG8zCtGPVdP3ULgBs8_vofqUVrMVoXvYoVXeHzdWosnKgPMXk1i0iJKsCBMomcXfTUL86TeXN-Wtxm9C7luX6YYdf3LbcJR2YVmEOcID-yaKMLUkablAvp3sdtRpe7XC0e00h2fdz5qYBmvDMMCGj0cLrnSXHqv35fCezz4pMc1KSDx4vz_UCW2EkohhrsILLM7YtW-7Jt6yp-PQ5auu_Qyrnv-lyEpwfg"/>
+<div class="absolute bottom-6 left-6 z-20">
+<p class="text-on-primary font-headline font-bold text-xl leading-tight">Your data is a <br/>private sanctuary.</p>
+</div>
+</div>
+</div>
+<!-- Step 2: Growth Focus Grid (Right Column) -->
+<div class="lg:col-span-7 space-y-6">
+<div class="flex justify-between items-end mb-2">
+<h2 class="text-on-surface font-headline font-bold text-2xl">Growth Focus Area</h2>
+<span class="text-primary font-semibold text-sm">Select multiple</span>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+<!-- Card: Health -->
+<div class="group cursor-pointer bg-surface-container-lowest p-6 rounded-[1.5rem] ring-1 ring-outline-variant/10 hover:ring-primary hover:bg-primary/5 transition-all duration-300">
+<div class="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-on-secondary-container">directions_run</span>
+</div>
+<h3 class="font-headline font-bold text-on-surface mb-1">Health</h3>
+<p class="text-on-surface-variant/60 text-xs leading-relaxed">Vigor, movement, and biology.</p>
+</div>
+<!-- Card: Career -->
+<div class="group cursor-pointer bg-surface-container-lowest p-6 rounded-[1.5rem] ring-1 ring-outline-variant/10 hover:ring-primary hover:bg-primary/5 transition-all duration-300">
+<div class="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-on-primary-container">work</span>
+</div>
+<h3 class="font-headline font-bold text-on-surface mb-1">Career</h3>
+<p class="text-on-surface-variant/60 text-xs leading-relaxed">Craft, impact, and legacy.</p>
+</div>
+<!-- Card: Mind -->
+<div class="group cursor-pointer bg-white p-6 rounded-[1.5rem] ring-2 ring-primary bg-primary/5 transition-all duration-300 relative overflow-hidden">
+<div class="absolute top-2 right-2">
+<span class="material-symbols-outlined text-primary text-lg" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="w-12 h-12 rounded-full bg-tertiary-container flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-on-tertiary-container" style="font-variation-settings: 'FILL' 1;">psychology</span>
+</div>
+<h3 class="font-headline font-bold text-on-surface mb-1">Mind</h3>
+<p class="text-on-surface-variant/60 text-xs leading-relaxed">Clarity, focus, and peace.</p>
+</div>
+<!-- Card: Wealth -->
+<div class="group cursor-pointer bg-surface-container-lowest p-6 rounded-[1.5rem] ring-1 ring-outline-variant/10 hover:ring-primary hover:bg-primary/5 transition-all duration-300">
+<div class="w-12 h-12 rounded-full bg-secondary-fixed flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-on-secondary-fixed">payments</span>
+</div>
+<h3 class="font-headline font-bold text-on-surface mb-1">Wealth</h3>
+<p class="text-on-surface-variant/60 text-xs leading-relaxed">Freedom and security.</p>
+</div>
+<!-- Card: Creativity -->
+<div class="group cursor-pointer bg-surface-container-lowest p-6 rounded-[1.5rem] ring-1 ring-outline-variant/10 hover:ring-primary hover:bg-primary/5 transition-all duration-300">
+<div class="w-12 h-12 rounded-full bg-surface-variant flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-on-surface-variant">palette</span>
+</div>
+<h3 class="font-headline font-bold text-on-surface mb-1">Creative</h3>
+<p class="text-on-surface-variant/60 text-xs leading-relaxed">Expression and curiosity.</p>
+</div>
+<!-- Card: Social -->
+<div class="group cursor-pointer bg-surface-container-lowest p-6 rounded-[1.5rem] ring-1 ring-outline-variant/10 hover:ring-primary hover:bg-primary/5 transition-all duration-300">
+<div class="w-12 h-12 rounded-full bg-tertiary-fixed-dim flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-on-tertiary-fixed">diversity_3</span>
+</div>
+<h3 class="font-headline font-bold text-on-surface mb-1">Social</h3>
+<p class="text-on-surface-variant/60 text-xs leading-relaxed">Bonding and community.</p>
+</div>
+</div>
+<!-- Footer CTA Section -->
+<div class="pt-8 flex flex-col md:flex-row items-center justify-between gap-6">
+<div class="flex items-center gap-4 text-on-surface-variant/50">
+<span class="material-symbols-outlined">auto_awesome</span>
+<span class="text-sm font-medium">AI-tailored experience loading...</span>
+</div>
+<button class="gradient-primary text-on-primary w-full md:w-auto px-12 py-5 rounded-2xl font-headline font-bold text-lg inner-glow shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                        Next Chapter
+                        <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Suppressed for Onboarding Flow -->
+</body></html>

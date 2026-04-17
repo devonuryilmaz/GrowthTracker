@@ -4,9 +4,16 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase/firebase_background_handler.dart';
-import 'screens/home.dart';
+import 'providers/user_provider.dart';
+import 'providers/task_provider.dart';
+import 'providers/stats_provider.dart';
+import 'screens/login_screen.dart';
+import 'screens/main_shell.dart';
 import 'services/api_service.dart';
+import 'theme/app_theme.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -19,11 +26,18 @@ const AndroidNotificationChannel channel = AndroidNotificationChannel(
   importance: Importance.high,
 );
 
+bool _firebaseInitialized = false;
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
 
-  FirebaseMessaging.onBackgroundMessage(firebaseBackgroundHandler);
+  try {
+    await Firebase.initializeApp();
+    _firebaseInitialized = true;
+    FirebaseMessaging.onBackgroundMessage(firebaseBackgroundHandler);
+  } catch (e) {
+    debugPrint('Firebase initialization skipped: $e');
+  }
 
   await flutterLocalNotificationsPlugin
       .resolvePlatformSpecificImplementation<
@@ -48,6 +62,8 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> initFCM() async {
+    if (!_firebaseInitialized) return;
+
     final messaging = FirebaseMessaging.instance;
     final ApiService apiService = ApiService();
     final String platform = Platform.isAndroid ? 'Android' : 'iOS'; // Bu satırı değiştirin
@@ -121,9 +137,65 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Growth Tracker',
-      home: HomeScreen(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => TaskProvider()),
+        ChangeNotifierProvider(create: (_) => StatsProvider()),
+      ],
+      child: MaterialApp(
+        title: 'Cognitive Sanctuary',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.darkTheme,
+        themeMode: ThemeMode.dark,
+        home: const _AppStartup(),
+      ),
+    );
+  }
+}
+
+/// İlk açılışta SharedPreferences'ta userId varsa Home'a, yoksa Login'e yönlendir.
+class _AppStartup extends StatefulWidget {
+  const _AppStartup();
+
+  @override
+  State<_AppStartup> createState() => _AppStartupState();
+}
+
+class _AppStartupState extends State<_AppStartup> {
+  @override
+  void initState() {
+    super.initState();
+    _checkFirstRun();
+  }
+
+  Future<void> _checkFirstRun() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('userId');
+
+    if (!mounted) return;
+
+    if (userId != null && userId.isNotEmpty) {
+      // Provider'ı doldur
+      await context.read<UserProvider>().loadFromPrefs();
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const MainShell()),
+      );
+    } else {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => LoginScreen()),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: AppColors.background,
+      body: Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      ),
     );
   }
 }

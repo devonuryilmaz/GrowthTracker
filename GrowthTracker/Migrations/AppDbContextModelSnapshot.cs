@@ -30,6 +30,13 @@ namespace GrowthTracker.API.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -37,14 +44,25 @@ namespace GrowthTracker.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("EstimatedMinutes")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("IsCompleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsSelected")
                         .HasColumnType("boolean");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("DailyTasks");
                 });
@@ -91,6 +109,9 @@ namespace GrowthTracker.API.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<int?>("DailyTaskId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("text");
@@ -105,9 +126,49 @@ namespace GrowthTracker.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
+                    b.HasIndex("DailyTaskId");
+
+                    b.HasIndex("UserId");
+
                     b.ToTable("Reminders");
+                });
+
+            modelBuilder.Entity("GrowthTracker.API.Entity.TaskSelection", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DailyTaskId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("SelectedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DailyTaskId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("TaskSelections");
                 });
 
             modelBuilder.Entity("GrowthTracker.API.Entity.User", b =>
@@ -118,6 +179,10 @@ namespace GrowthTracker.API.Migrations
 
                     b.Property<int>("Age")
                         .HasColumnType("integer");
+
+                    b.Property<string>("FocusArea")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("Job")
                         .IsRequired()
@@ -132,6 +197,16 @@ namespace GrowthTracker.API.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("GrowthTracker.API.Entity.DailyTask", b =>
+                {
+                    b.HasOne("GrowthTracker.API.Entity.User", "User")
+                        .WithMany("DailyTasks")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("GrowthTracker.API.Entity.DeviceToken", b =>
                 {
                     b.HasOne("GrowthTracker.API.Entity.User", "User")
@@ -139,6 +214,54 @@ namespace GrowthTracker.API.Migrations
                         .HasForeignKey("UserId");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("GrowthTracker.API.Entity.Reminder", b =>
+                {
+                    b.HasOne("GrowthTracker.API.Entity.DailyTask", "DailyTask")
+                        .WithMany()
+                        .HasForeignKey("DailyTaskId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("GrowthTracker.API.Entity.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("DailyTask");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("GrowthTracker.API.Entity.TaskSelection", b =>
+                {
+                    b.HasOne("GrowthTracker.API.Entity.DailyTask", "DailyTask")
+                        .WithMany("TaskSelections")
+                        .HasForeignKey("DailyTaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("GrowthTracker.API.Entity.User", "User")
+                        .WithMany("TaskSelections")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DailyTask");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("GrowthTracker.API.Entity.DailyTask", b =>
+                {
+                    b.Navigation("TaskSelections");
+                });
+
+            modelBuilder.Entity("GrowthTracker.API.Entity.User", b =>
+                {
+                    b.Navigation("DailyTasks");
+
+                    b.Navigation("TaskSelections");
                 });
 #pragma warning restore 612, 618
         }

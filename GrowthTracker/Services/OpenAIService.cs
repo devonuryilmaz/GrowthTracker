@@ -1,4 +1,6 @@
 using System;
+using System.Text.Json;
+using GrowthTracker.API.Dtos;
 using GrowthTracker.API.Entity;
 using OpenAI;
 using OpenAI.Chat;
@@ -12,51 +14,64 @@ public class OpenAIService
     public OpenAIService(IConfiguration configuration)
     {
         var apiKey = configuration["OpenAI:ApiKey"];
-
         _openAIClient = new OpenAIClient(apiKey);
     }
 
-    public async Task<string> GenerateTaskSuggestionsAsync(User user)
+    public async Task<List<TaskSuggestionDto>> GenerateTaskSuggestionsAsync(User user)
     {
-        var systemPrompt = @$"You are a helpful assistant that suggests one personalized, practical micro‑task to support habit building and personal growth.
+        var focusArea = string.IsNullOrWhiteSpace(user.FocusArea) ? "genel kişisel gelişim" : user.FocusArea;
 
-        User Profile:
-        - Name: {user.Name}
-        - Occupation/Role: {user.Job}
-        - Age: {user.Age}
+        var systemPrompt = $@"Sen kişisel gelişim koçusun. Kullanıcı için 3 farklı kategoride, günlük yapılabilir mikro-görevler öneriyorsun.
 
-        Guidelines:
-        - The task must take ≤ 30 minutes.
-        - Be specific, actionable, and safe.
-        - Tailor to the user's role and likely interests.
-        - Prefer areas like: health & wellness, productivity, learning, mindfulness, organization, relationships, finances.
-        - Avoid technical jargon unless clearly relevant to their role.
-        - Output format:
-        Title: <short title>
-        Description: <2–3 sentences with clear steps>";
+Kullanıcı Profili:
+- İsim: {user.Name}
+- Meslek: {user.Job}
+- Yaş: {user.Age}
+- Odak Alanı: {focusArea}
 
-        // Ask for a single personalized suggestion
+Kurallar:
+- Birincil kategori kullanıcının odak alanıyla ilgili olmalı ({focusArea}).
+- İkinci ve üçüncü kategoriler tamamlayıcı alanlarda olsun (sağlık, zihin, üretkenlik, öğrenme, mindfulness, finans).
+- Her görev ≤ 30 dakika sürmeli.
+- Görevler Türkçe olmalı.
+- Spesifik, uygulanabilir ve pratik ol.
+
+Yanıtı SADECE aşağıdaki JSON formatında ver, başka hiçbir metin ekleme:
+{{
+  ""tasks"": [
+    {{""title"": ""..."", ""description"": ""..."", ""category"": ""..."", ""estimatedMinutes"": 15}},
+    {{""title"": ""..."", ""description"": ""..."", ""category"": ""..."", ""estimatedMinutes"": 20}},
+    {{""title"": ""..."", ""description"": ""..."", ""category"": ""..."", ""estimatedMinutes"": 10}}
+  ]
+}}";
+
         var chatResponse = await _openAIClient.GetChatClient("gpt-4o")
             .CompleteChatAsync(
                 messages: new List<ChatMessage>
                 {
                     ChatMessage.CreateSystemMessage(systemPrompt),
-                    ChatMessage.CreateUserMessage($"Suggest one personalized micro‑task for {user.Name} (role: {user.Job}, age: {user.Age}).")
+                    ChatMessage.CreateUserMessage($"{user.Name} için bugünkü 3 görevi öner.")
                 },
                 options: new ChatCompletionOptions
                 {
                     Temperature = 0.8f,
-                    MaxOutputTokenCount = 200,
+                    MaxOutputTokenCount = 600,
+                    ResponseFormat = ChatResponseFormat.CreateJsonObjectFormat()
                 }
             );
 
-        // Response extraction
-        if (chatResponse?.Value?.Content != null && chatResponse.Value.Content.Count > 0)
-        {
-            return chatResponse.Value.Content[0].Text.Trim();
-        }
+        if (chatResponse?.Value?.Content == null || chatResponse.Value.Content.Count == 0)
+            return new List<TaskSuggestionDto>();
 
-        // Fallback: boş dönerse uyar
-        return string.Empty;
+        var json = chatResponse.Value.Content[0].Text.Trim();
+
+        using var doc = JsonDocument.Parse(json);
+        var tasksArray = doc.RootElement.GetProperty("tasks");
+        var result = JsonSerializer.Deserialize<List<TaskSuggestionDto>>(
+            tasksArray.GetRawText(),
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+        );
+
+        return result ?? new List<TaskSuggestionDto>();
     }
 }
