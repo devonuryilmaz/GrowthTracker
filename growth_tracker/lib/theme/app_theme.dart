@@ -2,34 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
-  static const background = Color(0xFF0D0B1E);
-  static const surface = Color(0xFF1A1830);
-  static const surfaceElevated = Color(0xFF201E3A);
-  static const primary = Color(0xFF7C6FFF);
-  static const primaryLight = Color(0xFF9D93FF);
-  static const accent = Color(0xFF5B4FCC);
-  static const cardBorder = Color(0xFF2E2B50);
-  static const textPrimary = Color(0xFFFFFFFF);
-  static const textSecondary = Color(0xFFABA8CC);
-  static const textMuted = Color(0xFF6B6890);
-  static const success = Color(0xFF4ADEAB);
-  static const warning = Color(0xFFFFB347);
-  static const error = Color(0xFFFF6B6B);
+  static const background = Color(0xFFF5F3FF);
+  static const surface = Color(0xFFFFFFFF);
+  static const surfaceElevated = Color(0xFFF0EFFE);
+  static const primary = Color(0xFF6366F1);
+  static const primaryLight = Color(0xFF818CF8);
+  static const accent = Color(0xFF4F46E5);
+  static const cardBorder = Color(0xFFE8E6F7);
+  static const textPrimary = Color(0xFF1E1B4B);
+  static const textSecondary = Color(0xFF4C4A7B);
+  static const textMuted = Color(0xFF7A719D);
+  static const success = Color(0xFF10B981);
+  static const warning = Color(0xFFF59E0B);
+  static const error = Color(0xFFEF4444);
 
   static const gradientPrimary = LinearGradient(
-    colors: [Color(0xFF7C6FFF), Color(0xFF5B4FCC)],
+    colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const gradientBackground = LinearGradient(
-    colors: [Color(0xFF0D0B1E), Color(0xFF13112A)],
+    colors: [Color(0xFFF5F3FF), Color(0xFFEDE9FE)],
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
 
   static const gradientCard = LinearGradient(
-    colors: [Color(0xFF201E3A), Color(0xFF1A1830)],
+    colors: [Color(0xFFFFFFFF), Color(0xFFF5F3FF)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -43,19 +43,17 @@ class AppColors {
 }
 
 class AppTheme {
-  static ThemeData get darkTheme {
+  static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
+      brightness: Brightness.light,
       scaffoldBackgroundColor: AppColors.background,
-      colorScheme: const ColorScheme.dark(
-        background: AppColors.background,
+      colorScheme: const ColorScheme.light(
         surface: AppColors.surface,
         primary: AppColors.primary,
         secondary: AppColors.primaryLight,
-        onBackground: AppColors.textPrimary,
         onSurface: AppColors.textPrimary,
-        onPrimary: AppColors.textPrimary,
+        onPrimary: Colors.white,
       ),
       textTheme: GoogleFonts.interTextTheme(
         const TextTheme(

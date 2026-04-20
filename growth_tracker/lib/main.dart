@@ -146,8 +146,8 @@ class _MyAppState extends State<MyApp> {
       child: MaterialApp(
         title: 'Growth Tracker',
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.darkTheme,
-        themeMode: ThemeMode.dark,
+        theme: AppTheme.lightTheme,
+        themeMode: ThemeMode.light,
         home: const _AppStartup(),
       ),
     );

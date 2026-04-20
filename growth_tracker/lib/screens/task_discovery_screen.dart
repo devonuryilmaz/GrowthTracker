@@ -4,6 +4,7 @@ import 'package:growth_tracker/models/daily_task.dart';
 import 'package:growth_tracker/providers/task_provider.dart';
 import 'package:growth_tracker/providers/user_provider.dart';
 import 'package:growth_tracker/screens/main_shell.dart';
+import 'package:growth_tracker/screens/task_detail_screen.dart';
 import 'package:growth_tracker/theme/app_theme.dart';
 
 class TaskDiscoveryScreen extends StatefulWidget {
@@ -19,6 +20,7 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
   List<DailyTask> _dailyTasks = [];
   List<TaskSuggestion> _suggestions = [];
   int? _selectingId;
+  String? _selectingSuggestionTitle;
 
   @override
   void initState() {
@@ -167,12 +169,12 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: AppColors.primary.withOpacity(0.25)),
         ),
-        child: Row(
+        child: const Row(
           children: [
-            const Icon(Icons.auto_awesome_rounded,
+            Icon(Icons.auto_awesome_rounded,
                 color: AppColors.primary, size: 14),
-            const SizedBox(width: 8),
-            const Expanded(
+            SizedBox(width: 8),
+            Expanded(
               child: Text(
                 'YAPAY ZEKA BUGUNUN EN VERIMLI BILISSEL YOLLARINI BELIRLEDI',
                 style: TextStyle(
@@ -195,7 +197,12 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
     final intensityColor = _intensityColor(task.category);
     final isSelecting = _selectingId == task.id;
 
-    return Padding(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => TaskDetailScreen(task: task)),
+      ),
+      child: Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
       child: Container(
         padding: const EdgeInsets.all(20),
@@ -311,7 +318,10 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
                   )
                 else
                   _selectButton(
-                    onPressed: () => _selectTask(task.id),
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => TaskDetailScreen(task: task)),
+                    ),
                     isLoading: isSelecting,
                   ),
               ],
@@ -319,16 +329,41 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
           ],
         ),
       ),
+      ),
     );
   }
 
   Widget _buildSuggestionCard(TaskSuggestion suggestion) {
     final categoryColor = AppTheme.categoryColor(suggestion.category);
     final intensityColor = _intensityColor(suggestion.category);
+    final isSelecting = _selectingSuggestionTitle == suggestion.title;
 
-    return Padding(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: isSelecting
+          ? null
+          : () async {
+              final user = context.read<UserProvider>().user;
+              if (user == null) return;
+              setState(() => _selectingSuggestionTitle = suggestion.title);
+              final task = await context
+                  .read<TaskProvider>()
+                  .selectSuggestion(suggestion, user.id);
+              if (!mounted) return;
+              setState(() => _selectingSuggestionTitle = null);
+              if (task != null) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (_) => TaskDetailScreen(task: task)),
+                );
+              }
+            },
+      child: Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-      child: Container(
+      child: AnimatedOpacity(
+        opacity: isSelecting ? 0.6 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: AppColors.surface,
@@ -408,11 +443,30 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
                   ),
                 ),
                 const Spacer(),
-                _selectButton(onPressed: null, isLoading: false),
+                _selectButton(
+                    onPressed: isSelecting ? null : () async {
+                      final user = context.read<UserProvider>().user;
+                      if (user == null) return;
+                      setState(() => _selectingSuggestionTitle = suggestion.title);
+                      final task = await context
+                          .read<TaskProvider>()
+                          .selectSuggestion(suggestion, user.id);
+                      if (!mounted) return;
+                      setState(() => _selectingSuggestionTitle = null);
+                      if (task != null) {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                              builder: (_) => TaskDetailScreen(task: task)),
+                        );
+                      }
+                    },
+                    isLoading: isSelecting),
               ],
             ),
           ],
         ),
+      ),
+      ),
       ),
     );
   }

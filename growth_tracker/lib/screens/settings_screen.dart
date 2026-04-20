@@ -205,11 +205,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Row(
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
                   children: [
-                    _statChip('${user?.age ?? 0}', 'Years'),
-                    const SizedBox(width: 8),
-                    _statChip(user?.focusArea ?? '—', 'Focus'),
+                    _statChip('${user?.age ?? 0}', 'Yaş'),
+                    ...?(user?.focusArea as String?)
+                        ?.split(', ')
+                        .where((s) => s.isNotEmpty)
+                        .map((area) => _statChip(area, '')),
                   ],
                 ),
               ],
@@ -228,6 +232,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         borderRadius: BorderRadius.circular(8),
       ),
       child: RichText(
+        overflow: TextOverflow.ellipsis,
+        maxLines: 1,
         text: TextSpan(
           children: [
             TextSpan(
@@ -239,7 +245,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             TextSpan(
-              text: ' $label',
+              text: label.isNotEmpty ? ' $label' : '',
               style: const TextStyle(
                 color: AppColors.textMuted,
                 fontSize: 10,
@@ -384,7 +390,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   context: context,
                   initialTime: _windDownTime,
                   builder: (ctx, child) => Theme(
-                    data: AppTheme.darkTheme,
+                    data: AppTheme.lightTheme,
                     child: child!,
                   ),
                 );
@@ -523,11 +529,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF3D2F8F), Color(0xFF5B4FCC)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: AppColors.gradientPrimary,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Column(

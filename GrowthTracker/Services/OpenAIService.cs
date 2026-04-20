@@ -74,4 +74,66 @@ Yanıtı SADECE aşağıdaki JSON formatında ver, başka hiçbir metin ekleme:
 
         return result ?? new List<TaskSuggestionDto>();
     }
+
+    public async Task<List<TaskDetailSuggestionDto>> GenerateTaskExamplesAsync(DailyTask task, User user)
+    {
+        var systemPrompt = $@"Sen kişisel gelişim koçusun. Kullanıcıya verilen görev için somut, uygulanabilir 4 örnek öneriyorsun.
+
+Kullanıcı Profili:
+- İsim: {user.Name}
+- Meslek: {user.Job}
+- Yaş: {user.Age}
+- Odak Alanı: {user.FocusArea}
+
+Görev:
+- Başlık: {task.Title}
+- Açıklama: {task.Description}
+- Kategori: {task.Category}
+- Tahmini Süre: {task.EstimatedMinutes} dakika
+
+Kurallar:
+- Her örnek, kullanıcının mesleği ve odak alanıyla alakalı olmalı.
+- Örnekler somut ve spesifik olmalı (""Redis"", ""Atomic Habits kitabı"", ""10 dakika nefes egzersizi"" gibi).
+- Her örnek için kısa bir neden (why) açıklaması yaz.
+- Tüm metinler Türkçe olmalı.
+
+Yanıtı SADECE aşağıdaki JSON formatında ver, başka hiçbir metin ekleme:
+{{
+  ""examples"": [
+    {{""example"": ""..."", ""why"": ""...""}},
+    {{""example"": ""..."", ""why"": ""...""}},
+    {{""example"": ""..."", ""why"": ""...""}},
+    {{""example"": ""..."", ""why"": ""...""}}
+  ]
+}}";
+
+        var chatResponse = await _openAIClient.GetChatClient("gpt-4o")
+            .CompleteChatAsync(
+                messages: new List<ChatMessage>
+                {
+                    ChatMessage.CreateSystemMessage(systemPrompt),
+                    ChatMessage.CreateUserMessage($"'{task.Title}' görevi için {user.Name}'a 4 somut örnek öner.")
+                },
+                options: new ChatCompletionOptions
+                {
+                    Temperature = 1.0f,
+                    MaxOutputTokenCount = 400,
+                    ResponseFormat = ChatResponseFormat.CreateJsonObjectFormat()
+                }
+            );
+
+        if (chatResponse?.Value?.Content == null || chatResponse.Value.Content.Count == 0)
+            return new List<TaskDetailSuggestionDto>();
+
+        var json = chatResponse.Value.Content[0].Text.Trim();
+
+        using var doc = JsonDocument.Parse(json);
+        var examplesArray = doc.RootElement.GetProperty("examples");
+        var result = JsonSerializer.Deserialize<List<TaskDetailSuggestionDto>>(
+            examplesArray.GetRawText(),
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+        );
+
+        return result ?? new List<TaskDetailSuggestionDto>();
+    }
 }

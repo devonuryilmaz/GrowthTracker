@@ -188,5 +188,87 @@ namespace GrowtTracker.API.Controllers
             var tasks = await _context.DailyTasks.AsNoTracking().ToListAsync();
             return Ok(tasks);
         }
+
+        /// <summary>
+        /// AI öneri kartını DailyTask olarak kaydeder ve seçili olarak işaretler.
+        /// </summary>
+        [HttpPost("from-suggestion")]
+        public async Task<IActionResult> CreateAndSelectFromSuggestion([FromQuery] Guid userId, [FromBody] GrowthTracker.API.Dtos.TaskSuggestionDto suggestion)
+        {
+            // Bugün zaten seçili aktif task varsa iptal et
+            var existingSelection = await _context.TaskSelections
+                .FirstOrDefaultAsync(ts => ts.UserId == userId && ts.Status == TaskSelectionStatus.Active);
+            if (existingSelection != null)
+                existingSelection.Status = TaskSelectionStatus.Skipped;
+
+            var task = new DailyTask
+            {
+                UserId = userId,
+                Title = suggestion.Title,
+                Description = suggestion.Description,
+                Category = suggestion.Category,
+                EstimatedMinutes = suggestion.EstimatedMinutes,
+                IsSelected = true,
+                CreatedAt = DateTime.UtcNow
+            };
+            await _context.DailyTasks.AddAsync(task);
+            await _context.SaveChangesAsync();
+
+            var selection = new TaskSelection
+            {
+                UserId = userId,
+                DailyTaskId = task.Id,
+                SelectedAt = DateTime.UtcNow,
+                Status = TaskSelectionStatus.Active
+            };
+            await _context.TaskSelections.AddAsync(selection);
+
+            var reminderTime = DateTime.UtcNow.AddMinutes(task.EstimatedMinutes > 0 ? task.EstimatedMinutes : 30);
+            var reminder = new Reminder
+            {
+                UserId = userId,
+                DailyTaskId = task.Id,
+                Title = task.Title,
+                Description = $"Görevi tamamlamayı unutma! ⏱ Tahmini süre: {task.EstimatedMinutes} dk",
+                ReminderDate = reminderTime,
+                IsCompleted = false
+            };
+            await _context.Reminders.AddAsync(reminder);
+            await _context.SaveChangesAsync();
+
+            var deviceTokens = await _context.DeviceTokens
+                .Where(dt => dt.UserId == userId)
+                .Select(dt => dt.Token)
+                .ToListAsync();
+
+            foreach (var token in deviceTokens)
+            {
+                try
+                {
+                    await _firebaseService.SendNotificationAsync(
+                        token,
+                        $"✅ Görev Seçildi: {task.Title}",
+                        $"Harika! {task.EstimatedMinutes} dakikada tamamlayabilirsin. 💪 Başarılar!");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Push notification gönderilemedi, UserId: {UserId}", userId);
+                }
+            }
+
+            return Ok(new
+            {
+                task.Id,
+                task.Title,
+                task.Description,
+                task.Category,
+                task.EstimatedMinutes,
+                task.IsSelected,
+                task.IsCompleted,
+                task.CreatedAt,
+                task.CompletedAt,
+                task.UserId,
+            });
+        }
     }
 }

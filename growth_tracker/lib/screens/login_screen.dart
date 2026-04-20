@@ -18,47 +18,47 @@ class _LoginScreenState extends State<LoginScreen> {
   final _nameController = TextEditingController();
   final _jobController = TextEditingController();
   final _ageController = TextEditingController();
-  String _selectedFocusArea = '';
+  final Set<String> _selectedFocusAreas = {};
 
   final List<Map<String, dynamic>> _focusAreas = [
     {
-      'label': 'Health',
-      'subtitle': 'Body, fitness and vitality',
+      'label': 'Sağlık',
+      'subtitle': 'Beden, zindelik ve enerji',
       'icon': Icons.favorite_rounded,
       'value': 'Sağlık',
       'color': AppColors.categoryHealth,
     },
     {
-      'label': 'Career',
-      'subtitle': 'Growth and productivity',
+      'label': 'Kariyer',
+      'subtitle': 'Gelişim ve verimlilik',
       'icon': Icons.trending_up_rounded,
       'value': 'Kariyer',
       'color': AppColors.categoryCareer,
     },
     {
-      'label': 'Mind',
-      'subtitle': 'Clarity, focus and calm',
+      'label': 'Zihin',
+      'subtitle': 'Netlik, odak ve dinginlik',
       'icon': Icons.psychology_rounded,
       'value': 'Zihinsel',
       'color': AppColors.categoryMind,
     },
     {
-      'label': 'Wealth',
-      'subtitle': 'Financial intelligence',
+      'label': 'Servet',
+      'subtitle': 'Finansal zeka',
       'icon': Icons.account_balance_rounded,
       'value': 'Finansal',
       'color': AppColors.categoryFinancial,
     },
     {
-      'label': 'Creative',
-      'subtitle': 'Conscious creation',
+      'label': 'Yaratıcı',
+      'subtitle': 'Bilinçli yaratıcılık',
       'icon': Icons.auto_awesome_rounded,
       'value': 'Mindfulness',
       'color': AppColors.categoryMindfulness,
     },
     {
-      'label': 'Social',
-      'subtitle': 'Glowing connections',
+      'label': 'Sosyal',
+      'subtitle': 'Güçlü bağlantılar',
       'icon': Icons.people_rounded,
       'value': 'Öğrenme',
       'color': AppColors.categoryLearning,
@@ -67,16 +67,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _nextPage() {
     if (_currentPage == 0 && _nameController.text.trim().isEmpty) {
-      _showSnack('Please enter your name');
+      _showSnack('Lütfen adınızı girin');
       return;
     }
     if (_currentPage == 1) {
       if (_jobController.text.trim().isEmpty) {
-        _showSnack('Please enter your profession');
+        _showSnack('Lütfen mesleğinizi girin');
         return;
       }
       if (int.tryParse(_ageController.text) == null) {
-        _showSnack('Please enter a valid age');
+        _showSnack('Lütfen geçerli bir yaş girin');
         return;
       }
     }
@@ -100,8 +100,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _finish() async {
-    if (_selectedFocusArea.isEmpty) {
-      _showSnack('Please select a growth focus area');
+    if (_selectedFocusAreas.isEmpty) {
+      _showSnack('Lütfen bir odak alanı seçin');
       return;
     }
 
@@ -109,14 +109,14 @@ class _LoginScreenState extends State<LoginScreen> {
           name: _nameController.text.trim(),
           job: _jobController.text.trim(),
           age: int.parse(_ageController.text),
-          focusArea: _selectedFocusArea,
+          focusArea: _selectedFocusAreas.join(', '),
         );
 
     if (!mounted) return;
 
     final error = context.read<UserProvider>().error;
     if (error != null) {
-      _showSnack('Error: $error');
+      _showSnack('Hata: $error');
       return;
     }
 
@@ -185,7 +185,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const _AppLogo(),
                       const Spacer(),
                       Text(
-                        'Step ${_currentPage + 1} of 3',
+                        'Adım ${_currentPage + 1} / 3',
                         style: const TextStyle(
                           color: AppColors.textMuted,
                           fontSize: 12,
@@ -245,7 +245,7 @@ class _LoginScreenState extends State<LoginScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Define your\npresence.',
+            'Varlığını\ntanımla.',
             style: TextStyle(
               fontSize: 36,
               fontWeight: FontWeight.w700,
@@ -256,7 +256,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           const SizedBox(height: 12),
           const Text(
-            'Before we begin, help us curate your\nmental landscape with a few simple details.',
+            'Başlamadan önce, birkaç basit detay ile\nzihinsel haritanı oluşturalım.',
             style: TextStyle(
               fontSize: 14,
               color: AppColors.textSecondary,
@@ -264,22 +264,18 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           const SizedBox(height: 40),
-          _sectionLabel('Personal Identity'),
+          _sectionLabel('Kişisel Kimlik'),
           const SizedBox(height: 12),
           _darkTextField(
             controller: _nameController,
-            hint: 'What should we call you?',
-            label: 'Your Name',
+            hint: 'Seni nasıl çağıralım?',
+            label: 'Adın',
           ),
           const SizedBox(height: 24),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF2A1F5F), Color(0xFF1A1830)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              gradient: AppColors.gradientCard,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppColors.cardBorder),
             ),
@@ -301,7 +297,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(width: 12),
                 const Expanded(
                   child: Text(
-                    'Your data is a\nprivate sanctuary.',
+                    'Verileriniz güvenli\nbir sığınaktır.',
                     style: TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: 13,
@@ -314,7 +310,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           const Spacer(),
-          _primaryButton('Next Chapter →', _nextPage),
+          _primaryButton('Sonraki →', _nextPage),
         ],
       ),
     );
@@ -327,7 +323,7 @@ class _LoginScreenState extends State<LoginScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Shape your\nidentity.',
+            'Kimliğini\nşekillendir.',
             style: TextStyle(
               fontSize: 36,
               fontWeight: FontWeight.w700,
@@ -338,7 +334,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           const SizedBox(height: 12),
           const Text(
-            'A few more details help us personalize\nyour cognitive journey.',
+            'Birkaç detay daha zihinsel yolculuğunu\nkişiselleştirmemize yardımcı olur.',
             style: TextStyle(
               fontSize: 14,
               color: AppColors.textSecondary,
@@ -346,7 +342,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           const SizedBox(height: 40),
-          _sectionLabel('Personal Identity'),
+          _sectionLabel('Kişisel Kimlik'),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -354,7 +350,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: _darkTextField(
                   controller: _ageController,
                   hint: '27',
-                  label: 'Age',
+                  label: 'Yaş',
                   keyboardType: TextInputType.number,
                 ),
               ),
@@ -363,7 +359,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: _darkTextField(
                   controller: TextEditingController(text: 'UTC-5:30'),
                   hint: 'UTC-5:30',
-                  label: 'Timezone',
+                  label: 'Saat Dilimi',
                   enabled: false,
                 ),
               ),
@@ -372,11 +368,11 @@ class _LoginScreenState extends State<LoginScreen> {
           const SizedBox(height: 12),
           _darkTextField(
             controller: _jobController,
-            hint: 'Creative Architect, Developer...',
-            label: 'Your Profession',
+            hint: 'Yaratıcı Mimar, Geliştirici...',
+            label: 'Mesleğin',
           ),
           const Spacer(),
-          _primaryButton('Next Chapter →', _nextPage),
+          _primaryButton('Sonraki →', _nextPage),
         ],
       ),
     );
@@ -390,7 +386,7 @@ class _LoginScreenState extends State<LoginScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Growth\nFocus Area',
+            'Büyüme\nOdak Alanı',
             style: TextStyle(
               fontSize: 36,
               fontWeight: FontWeight.w700,
@@ -401,7 +397,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Select multiple',
+            'Birden fazla seçebilirsin',
             style: TextStyle(
               color: AppColors.primary,
               fontSize: 13,
@@ -417,11 +413,17 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisSpacing: 12,
               childAspectRatio: 1.1,
               children: _focusAreas.map((area) {
-                final selected = _selectedFocusArea == area['value'];
+                final selected = _selectedFocusAreas.contains(area['value']);
                 final color = area['color'] as Color;
                 return GestureDetector(
-                  onTap: () =>
-                      setState(() => _selectedFocusArea = area['value']),
+                  onTap: () => setState(() {
+                    final value = area['value'] as String;
+                    if (selected) {
+                      _selectedFocusAreas.remove(value);
+                    } else {
+                      _selectedFocusAreas.add(value);
+                    }
+                  }),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     decoration: BoxDecoration(
@@ -500,7 +502,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           const SizedBox(height: 16),
           _primaryButton(
-            userProvider.isLoading ? '' : 'Next Chapter →',
+            userProvider.isLoading ? '' : 'Sonraki →',
             userProvider.isLoading ? null : _finish,
             loading: userProvider.isLoading,
           ),

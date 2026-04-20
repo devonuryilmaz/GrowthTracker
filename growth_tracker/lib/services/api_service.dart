@@ -124,6 +124,25 @@ class ApiService {
     throw Exception('Failed to fetch suggestions: ${response.statusCode}');
   }
 
+  Future<DailyTask> createAndSelectSuggestion(
+      TaskSuggestion suggestion, String userId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/dailytasks/from-suggestion?userId=$userId'),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        'title': suggestion.title,
+        'description': suggestion.description,
+        'category': suggestion.category,
+        'estimatedMinutes': suggestion.estimatedMinutes,
+      }),
+    );
+    if (response.statusCode == 200) {
+      return DailyTask.fromJson(jsonDecode(response.body));
+    }
+    throw Exception(
+        'Failed to create task from suggestion: ${response.statusCode}');
+  }
+
   Future<Map<String, dynamic>> selectTask(int taskId, String userId) async {
     final response = await http.post(
       Uri.parse('$baseUrl/dailytasks/$taskId/select?userId=$userId'),
@@ -142,6 +161,18 @@ class ApiService {
       return jsonDecode(response.body) as Map<String, dynamic>;
     }
     throw Exception('Failed to complete task: ${response.statusCode}');
+  }
+
+  Future<List<Map<String, dynamic>>> fetchTaskExamples(
+      int taskId, String userId) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/ai/task-examples?taskId=$taskId&userId=$userId'),
+    );
+    if (response.statusCode == 200) {
+      final List<dynamic> body = jsonDecode(response.body);
+      return body.cast<Map<String, dynamic>>();
+    }
+    throw Exception('Failed to fetch task examples: ${response.statusCode}');
   }
 
   Future<List<DailyTask>> fetchHistory(String userId, {int days = 30}) async {

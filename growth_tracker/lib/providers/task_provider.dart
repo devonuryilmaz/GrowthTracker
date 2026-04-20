@@ -92,4 +92,28 @@ class TaskProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
   }
+
+  Future<List<Map<String, dynamic>>> loadTaskExamples(
+      int taskId, String userId) async {
+    try {
+      return await _api.fetchTaskExamples(taskId, userId);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<DailyTask?> selectSuggestion(
+      TaskSuggestion suggestion, String userId) async {
+    try {
+      final task = await _api.createAndSelectSuggestion(suggestion, userId);
+      _todayTasks.add(task);
+      _activeTask = task;
+      notifyListeners();
+      return task;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return null;
+    }
+  }
 }
