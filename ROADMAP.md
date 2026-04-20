@@ -1,7 +1,7 @@
 # GrowthTracker — Yol Haritası & İş Takip Dokümanı
 
 > **Vizyon:** Her meslek grubuna hitap eden, AI destekli Kişisel Gelişim Koçu.  
-> **Son Güncelleme:** 16 Nisan 2026
+> **Son Güncelleme:** 19 Nisan 2026
 
 ---
 
@@ -10,31 +10,33 @@
 ### Backend (.NET 9 + PostgreSQL + Hangfire + Firebase)
 | Bileşen | Durum | Not |
 |---------|-------|-----|
-| User entity | ✅ Var | `Name`, `Job`, `Age` — **FocusArea eksik** |
-| DailyTask entity | ✅ Var | `Title`, `Description`, `IsCompleted` — **UserId, Category, EstimatedMinutes eksik** |
-| OpenAI entegrasyonu | ✅ Var | Tek görev üretiyor — **3'lü JSON Array'e çevrilmeli** |
-| AIGeneratorJob (Hangfire) | ✅ Aktif | Günlük çalışıyor ama tek görev kaydediyor |
-| ReminderJob | ⚠️ Devre dışı | Program.cs'de yorum satırında, hardcoded token |
-| UsersController | ❌ Boş | Hiçbir endpoint yok |
-| TaskSelection yapısı | ❌ Yok | Kullanıcının seçimini kaydedecek entity/endpoint yok |
-| Görev tamamlama endpoint'i | ❌ Yok | Backend'e "bitti" sinyali gönderilemiyor |
-| IUserService | ⚠️ Eksik | Sadece `Create` ve `GetById` var, `Update` yok |
+| User entity | ✅ Var | `Name`, `Job`, `Age`, `FocusArea` — tam |
+| DailyTask entity | ✅ Var | `Title`, `Description`, `IsCompleted`, `UserId`, `Category`, `EstimatedMinutes`, `IsSelected`, `CompletedAt` — tam |
+| OpenAI entegrasyonu | ✅ Var | 3'lü JSON Array döndürüyor, FocusArea prompt'a dahil |
+| AIGeneratorJob (Hangfire) | ✅ Aktif | Günlük çalışıyor, 3 görev kaydediyor, idempotent kontrol var |
+| ReminderJob | ✅ Aktif | Program.cs'de aktif, gerçek DeviceToken tablosundan çekiyor |
+| UsersController | ✅ Var | `POST /api/users/sync` ve `GET /api/users/{id}` endpoint'leri mevcut |
+| TaskSelection yapısı | ✅ Var | Entity, endpoint ve servis tam olarak implement edildi |
+| Görev tamamlama endpoint'i | ✅ Var | `POST /api/dailytasks/{id}/complete` çalışıyor |
+| IUserService | ✅ Tam | `Create`, `GetById`, `Update`, `GetOrCreate` metotları var |
+| NotificationService/FirebaseService | ⚠️ Ayrı | İki servis hâlâ ayrı; birleştirme yapılmadı (FAZ 4.5) |
 
 ### Flutter (Dart)
 | Bileşen | Durum | Not |
 |---------|-------|-----|
-| Login/Onboarding | ✅ Var | Ad, Yaş, Meslek — **Odak Alanı eksik** |
-| Home Screen | ✅ Var | Sadece reminder listesi gösteriyor |
+| Login/Onboarding | ✅ Var | Ad, Yaş, Meslek, Odak Alanı (6 kategori) — çok adımlı |
+| Home Screen | ✅ Yeniden tasarlandı | Selamlama, aktif görev kartı, tamamlama butonu, progress bar |
 | AddReminder Screen | ✅ Var | Çalışıyor |
-| State Management | ❌ Yok | Sadece `StatefulWidget` kullanılıyor |
-| User modeli | ❌ Yok | SharedPreferences'ta düz string |
-| DailyTask / AI Task modeli | ❌ Yok | |
-| Task Discovery ekranı | ❌ Yok | 3 kart arasından seçim |
-| Aktif Görev paneli | ❌ Yok | |
-| Journey / Stats ekranı | ❌ Yok | |
-| Ayarlar ekranı | ❌ Yok | |
-| Backend'e user sync | ❌ Yok | Local veri backend'e gönderilmiyor |
-| Görev tamamlama feedback | ❌ Yok | |
+| State Management | ✅ Var | `provider` paketi, `UserProvider` + `TaskProvider` + `StatsProvider` |
+| User modeli | ✅ Var | `lib/models/user_model.dart` — tam model |
+| DailyTask / AI Task modeli | ✅ Var | `lib/models/daily_task.dart`, `lib/models/task_selection.dart` |
+| Task Discovery ekranı | ✅ Var | 3 TaskCard, shimmer yükleme, seçim → Home yönlendirme |
+| Aktif Görev paneli | ✅ Var | HomeScreen ana kartında görev detayı |
+| Journey / Stats ekranı | ⚠️ Kısmi | Ekran var, API bağlantısı var; `fl_chart` ve `table_calendar` paketi **eksik** |
+| Ayarlar ekranı | ✅ Var | TimePicker, profil düzenleme, bildirim toggle, backend sync |
+| Backend'e user sync | ✅ Var | Onboarding ve Settings'ten `POST /api/users/sync` çağrılıyor |
+| Görev tamamlama feedback | ⚠️ Eksik | Tamamlama butonu var, `confetti` paketi **pubspec'e eklenmedi** |
+| Named Routes | ⚠️ Eksik | `MaterialPageRoute` kullanılıyor, `MaterialApp.routes` tanımlanmadı |
 
 ---
 
@@ -54,7 +56,7 @@
   - `CompletedAt` (DateTime? — tamamlanma zamanı)
 - [x] **1.3** `TaskSelection` entity oluştur:
   - `Id`, `UserId`, `DailyTaskId`, `SelectedAt`, `CompletedAt`, `Status` (Pending/Active/Completed/Skipped)
-- [ ] **1.4** Migration oluştur ve uygula *(migration adı: `Phase1_FocusArea_DailyTaskExtensions_TaskSelection` — `dotnet ef migrations add` ile çalıştır)*
+- [x] **1.4** Migration oluştur ve uygula *(oluşturulan migration: `20260417060000_UpdateModel` — tüm entity değişikliklerini kapsamaktadır)*
 - [x] **1.5** `AppDbContext`'e yeni DbSet'leri ekle, FK ilişkilerini `OnModelCreating` ile tanımla
 
 ---
@@ -102,7 +104,7 @@
 - [x] **4.2** `Program.cs`'deki ReminderJob recurring job kaydını aktif hale getir (yorum satırından çıkar)
 - [x] **4.3** Görev seçildiğinde o görev için otomatik bir `Reminder` kaydı oluştur (veya doğrudan `TaskSelection` üzerinden bildirim gönder)
 - [x] **4.4** Bildirim içeriğini zenginleştir: görev başlığı, süre, motivasyon mesajı
-- [x] **4.5** `NotificationService`'deki eski FCM v1 legacy API'yi `FirebaseService` (Admin SDK) üzerinden çalışacak şekilde birleştir
+- [ ] **4.5** `NotificationService`'deki eski FCM v1 legacy API'yi `FirebaseService` (Admin SDK) üzerinden çalışacak şekilde birleştir *(hâlâ iki ayrı servis mevcut)*
 
 ---
 
@@ -165,14 +167,14 @@
 ### FAZ 8 — Flutter: Home Screen (Aktif Görev Paneli)
 > **Hedef:** Kullanıcının aktif görevini her açılışta görüp tamamlayabildiği ana ekran.
 
-- [x] **8.1** `HomeScreen`'i yeniden tasarla:
-  - **Üst alan:** Selamlama ("Günaydın, {isim}! 👋") + tarih
-  - **Ana kart:** Seçilen aktif görevin detayı (başlık, açıklama, kategori, süre)
+- [ ] **8.1** `HomeScreen`'i yeniden tasarla:
+  - **Üst alan:** Selamlama ("Günaydın, {isim}! 👋") + tarih ✅
+  - **Ana kart:** Seçilen aktif görevin detayı (başlık, açıklama, kategori, süre) ✅
   - **"Tamamladım" butonu** — tıklandığında:
-    - `POST /api/dailytasks/{id}/complete` çağrısı
-    - Konfeti animasyonu (confetti package)
-    - Tebrik mesajı
-  - **Alt alan:** Günlük progress bar (tamamlanan / toplam)
+    - `POST /api/dailytasks/{id}/complete` çağrısı ✅
+    - Konfeti animasyonu (confetti package) ❌ *`confetti` paketi pubspec'e eklenmedi*
+    - Tebrik mesajı ✅
+  - **Alt alan:** Günlük progress bar (tamamlanan / toplam) ✅
 - [x] **8.2** Henüz görev seçilmemişse → Task Discovery'e yönlendir
 - [x] **8.3** Gün içinde görev tamamlandıysa → "Harika iş! Yarın yeni görevler seni bekliyor" durumu
 - [x] **8.4** Pull-to-refresh ile güncel veri çekme
@@ -182,13 +184,13 @@
 ### FAZ 9 — Flutter: Journey / Stats Ekranı (Gelişim Geçmişi)
 > **Hedef:** Kullanıcının geçmiş performansını görselleştirerek motivasyon sağla.
 
-- [x] **9.1** `JourneyScreen` oluştur:
-  - **Takvim görünümü:** Tamamlanan günler işaretli (streak/seri desteği)
-  - **Liste görünümü:** Geçmiş görevler tarih sıralı
-  - Takvim/liste arasında toggle
-- [x] **9.2** Kategori bazlı istatistik grafikleri:
-  - Pasta grafik veya bar chart (fl_chart paketi)
-  - Kariyer: X görev, Sağlık: Y görev vb.
+- [ ] **9.1** `JourneyScreen` oluştur:
+  - **Takvim görünümü:** Tamamlanan günler işaretli (streak/seri desteği) ❌ *`table_calendar` paketi yok, takvim widget'ı implement edilmedi*
+  - **Liste görünümü:** Geçmiş görevler tarih sıralı ✅
+  - Takvim/liste arasında toggle ✅ *(farklı görünüm toggle'ı var)*
+- [ ] **9.2** Kategori bazlı istatistik grafikleri:
+  - Pasta grafik veya bar chart (fl_chart paketi) ❌ *`fl_chart` paketi pubspec'e **eklenmedi**; özel/manuel grafik widget'ları kullanılıyor*
+  - Kariyer: X görev, Sağlık: Y görev vb. ✅ *(custom chart ile)*
 - [x] **9.3** Toplam tamamlama sayısı, en uzun seri, bu haftaki performans gibi özet kartlar
 - [x] **9.4** `GET /api/dailytasks/history` ve `GET /api/dailytasks/stats` entegrasyonu
 
@@ -215,7 +217,7 @@
   - 🔍 Discover (Görev Seçimi)
   - 📊 Journey (İstatistik)
   - ⚙️ Settings (Ayarlar)
-- [x] **11.2** `MaterialApp`'e named routes tanımla
+- [ ] **11.2** `MaterialApp`'e named routes tanımla *(hâlâ `MaterialPageRoute` ile doğrudan navigasyon kullanılıyor)*
 - [x] **11.3** Uygulama teması (ThemeData) — tutarlı renk paleti, tipografi, kart stilleri
 - [x] **11.4** Splash screen + ilk yükleme akışı (auth check → onboarding / home)
 - [ ] **11.5** Hata durumları için genel error widget'ları
@@ -229,7 +231,7 @@
 - [ ] **12.2** Flutter widget testleri: Onboarding akışı, Task Discovery, Home Screen
 - [ ] **12.3** `confetti` ve `fl_chart` paketlerini pubspec'e ekle
 - [ ] **12.4** Uçtan uca test: Onboarding → AI suggestion → Task select → Complete → Stats görüntüleme
-- [ ] **12.5** README.md güncellemesi: Yeni mimari, kurulum adımları, ekran görüntüleri
+- [x] **12.5** README.md güncellemesi: Yeni mimari, kurulum adımları, ekran görüntüleri
 
 ---
 

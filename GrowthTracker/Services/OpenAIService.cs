@@ -54,7 +54,7 @@ Yanıtı SADECE aşağıdaki JSON formatında ver, başka hiçbir metin ekleme:
                 },
                 options: new ChatCompletionOptions
                 {
-                    Temperature = 0.8f,
+                    Temperature = 1.0f,
                     MaxOutputTokenCount = 600,
                     ResponseFormat = ChatResponseFormat.CreateJsonObjectFormat()
                 }

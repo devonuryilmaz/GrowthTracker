@@ -75,11 +75,11 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
     switch (category.toLowerCase()) {
       case 'kariyer':
       case 'zihinsel':
-        return 'HIGH FLOW STATE';
+        return 'YUKSEK AKIS';
       case 'mindfulness':
-        return 'DECLUTTERING';
+        return 'SADELESME';
       default:
-        return 'GROWTH';
+        return 'GELISIM';
     }
   }
 
@@ -141,7 +141,7 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
       pinned: true,
       elevation: 0,
       title: const Text(
-        'Discovery Awaits',
+        'Kesif Seni Bekliyor',
         style: TextStyle(
           color: AppColors.textPrimary,
           fontSize: 20,
@@ -174,7 +174,7 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
             const SizedBox(width: 8),
             const Expanded(
               child: Text(
-                "YOUR AI HAS IDENTIFIED TODAY'S PEAK COGNITIVE PATHS",
+                'YAPAY ZEKA BUGUNUN EN VERIMLI BILISSEL YOLLARINI BELIRLEDI',
                 style: TextStyle(
                   color: AppColors.primary,
                   fontSize: 10,
@@ -220,8 +220,7 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
                   decoration: BoxDecoration(
                     color: intensityColor.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(20),
-                    border:
-                        Border.all(color: intensityColor.withOpacity(0.35)),
+                    border: Border.all(color: intensityColor.withOpacity(0.35)),
                   ),
                   child: Text(
                     _intensityLabel(task.category),
@@ -276,7 +275,7 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
                     color: AppColors.textMuted, size: 14),
                 const SizedBox(width: 4),
                 Text(
-                  '${task.estimatedMinutes} min',
+                  '${task.estimatedMinutes} dk',
                   style: const TextStyle(
                     color: AppColors.textMuted,
                     fontSize: 12,
@@ -285,13 +284,13 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
                 const Spacer(),
                 if (isSelected)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
                       color: AppColors.success.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                          color: AppColors.success.withOpacity(0.3)),
+                      border:
+                          Border.all(color: AppColors.success.withOpacity(0.3)),
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
@@ -300,7 +299,7 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
                             color: AppColors.success, size: 14),
                         SizedBox(width: 4),
                         Text(
-                          'Selected',
+                          'Secildi',
                           style: TextStyle(
                             color: AppColors.success,
                             fontSize: 12,
@@ -347,8 +346,7 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
                   decoration: BoxDecoration(
                     color: intensityColor.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(20),
-                    border:
-                        Border.all(color: intensityColor.withOpacity(0.35)),
+                    border: Border.all(color: intensityColor.withOpacity(0.35)),
                   ),
                   child: Text(
                     _intensityLabel(suggestion.category),
@@ -403,7 +401,7 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
                     color: AppColors.textMuted, size: 14),
                 const SizedBox(width: 4),
                 Text(
-                  '${suggestion.estimatedMinutes} min',
+                  '${suggestion.estimatedMinutes} dk',
                   style: const TextStyle(
                     color: AppColors.textMuted,
                     fontSize: 12,
@@ -419,7 +417,8 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
     );
   }
 
-  Widget _selectButton({required VoidCallback? onPressed, required bool isLoading}) {
+  Widget _selectButton(
+      {required VoidCallback? onPressed, required bool isLoading}) {
     return SizedBox(
       height: 36,
       child: DecoratedBox(
@@ -445,7 +444,7 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
                       strokeWidth: 2, color: Colors.white),
                 )
               : const Text(
-                  'Select and Start →',
+                  'Sec ve Basla →',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 12,
@@ -474,7 +473,7 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'FOCUS POTENTIAL',
+                    'ODAK POTANSIYELI',
                     style: TextStyle(
                       color: AppColors.textMuted,
                       fontSize: 9,
@@ -492,7 +491,7 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
                     ),
                   ),
                   Text(
-                    'Optimal window starts in 45m',
+                    'En uygun pencere 45 dk sonra baslar',
                     style: TextStyle(
                       color: AppColors.textMuted,
                       fontSize: 11,
@@ -513,7 +512,7 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
                   ),
                 ),
                 const Text(
-                  'cognitive pts',
+                  'bilissel puan',
                   style: TextStyle(
                     color: AppColors.textMuted,
                     fontSize: 11,
@@ -532,10 +531,11 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
       padding: const EdgeInsets.all(40),
       child: Column(
         children: [
-          const Icon(Icons.wifi_off_rounded, color: AppColors.textMuted, size: 48),
+          const Icon(Icons.wifi_off_rounded,
+              color: AppColors.textMuted, size: 48),
           const SizedBox(height: 16),
           const Text(
-            'Connection lost',
+            'Baglanti koptu',
             style: TextStyle(
               color: AppColors.textPrimary,
               fontSize: 16,
@@ -544,7 +544,7 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            _error ?? 'Unknown error',
+            _error ?? 'Bilinmeyen hata',
             textAlign: TextAlign.center,
             style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
           ),
@@ -552,7 +552,7 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
           TextButton.icon(
             onPressed: _load,
             icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
-            label: const Text('Try again',
+            label: const Text('Tekrar dene',
                 style: TextStyle(color: AppColors.primary)),
           ),
         ],

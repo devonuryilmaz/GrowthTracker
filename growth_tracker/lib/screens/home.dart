@@ -71,11 +71,11 @@ class _HomeScreenState extends State<HomeScreen> {
     switch (category.toLowerCase()) {
       case 'kariyer':
       case 'zihinsel':
-        return 'HIGH INTENSITY';
+        return 'YUKSEK YOGUNLUK';
       case 'mindfulness':
-        return 'LOW INTENSITY';
+        return 'DUSUK YOGUNLUK';
       default:
-        return 'MEDIUM INTENSITY';
+        return 'ORTA YOGUNLUK';
     }
   }
 
@@ -140,7 +140,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(width: 8),
           const Text(
-            'Cognitive Sanctuary',
+            'Growth Tracker',
             style: TextStyle(
               color: AppColors.textPrimary,
               fontSize: 14,
@@ -176,7 +176,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildActiveSession(DailyTask task) {
     final categoryColor = AppTheme.categoryColor(task.category);
     final intensityColor = _intensityColor(task.category);
-    final estTime = DateTime.now().add(Duration(minutes: _remainingSeconds ~/ 60 + 1));
+    final estTime =
+        DateTime.now().add(Duration(minutes: _remainingSeconds ~/ 60 + 1));
 
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -204,7 +205,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(width: 6),
                 const Text(
-                  'ACTIVE SESSION',
+                  'AKTIF OTURUM',
                   style: TextStyle(
                     color: AppColors.success,
                     fontSize: 10,
@@ -235,8 +236,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       decoration: BoxDecoration(
                         color: intensityColor.withOpacity(0.15),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                            color: intensityColor.withOpacity(0.4)),
+                        border:
+                            Border.all(color: intensityColor.withOpacity(0.4)),
                       ),
                       child: Text(
                         _intensityLabel(task.category),
@@ -301,7 +302,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 Center(
                   child: Text(
-                    'EST. COMPLETION  ${DateFormat('HH:mm').format(estTime)}',
+                    'TAHMINI BITIS  ${DateFormat('HH:mm').format(estTime)}',
                     style: const TextStyle(
                       color: AppColors.textMuted,
                       fontSize: 10,
@@ -324,7 +325,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       icon: const Icon(Icons.check_circle_rounded,
                           color: Colors.white, size: 18),
                       label: const Text(
-                        'Mark as Done',
+                        'Tamamlandi Olarak Isaretle',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 15,
@@ -386,7 +387,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Row(
                 children: [
                   const Text(
-                    'Daily Trajectory',
+                    'Gunluk Ilerleme',
                     style: TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: 14,
@@ -395,7 +396,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   const Spacer(),
                   Text(
-                    '${(pct * 100).round()}% Growth',
+                    '%${(pct * 100).round()} Buyume',
                     style: const TextStyle(
                       color: AppColors.primary,
                       fontSize: 12,
@@ -419,14 +420,14 @@ class _HomeScreenState extends State<HomeScreen> {
               Row(
                 children: [
                   _trajectoryChip(
-                    label: 'TIME INVESTED',
-                    value: '${(invested / 60).toStringAsFixed(1)} hrs',
+                    label: 'HARCANAN SURE',
+                    value: '${(invested / 60).toStringAsFixed(1)} sa',
                     color: AppColors.primary,
                   ),
                   const SizedBox(width: 12),
                   _trajectoryChip(
-                    label: 'REST AVAILABLE',
-                    value: '${(remaining / 60).toStringAsFixed(1)} hrs',
+                    label: 'KALAN DINLENME',
+                    value: '${(remaining / 60).toStringAsFixed(1)} sa',
                     color: AppColors.textMuted,
                   ),
                 ],
@@ -507,7 +508,7 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Focus Peak',
+                  'Odak Zirvesi',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 13,
@@ -516,7 +517,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Your cognitive capacity is at $cogPct% right now.',
+                  'Bilissel kapasiten su anda %$cogPct seviyesinde.',
                   style: const TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 12,
@@ -556,7 +557,7 @@ class _HomeScreenState extends State<HomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Next: Breathe',
+                  'Siradaki: Nefes',
                   style: TextStyle(
                     color: AppColors.textPrimary,
                     fontSize: 13,
@@ -565,7 +566,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  'A rest session is scheduled in 15 mins.',
+                  '15 dakika sonra bir dinlenme oturumu planlandi.',
                   style: TextStyle(
                     color: AppColors.textSecondary,
                     fontSize: 12,
@@ -597,7 +598,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 20),
           const Text(
-            'Discovery Awaits',
+            'Kesif Seni Bekliyor',
             style: TextStyle(
               color: AppColors.textPrimary,
               fontSize: 22,
@@ -606,7 +607,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'No active session. Explore today\'s\ncognitive paths to begin.',
+            'Aktif oturum yok. Baslamak icin\nbugunun gelisim yollarini kesfet.',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: AppColors.textSecondary,
@@ -636,7 +637,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 child: const Text(
-                  'Start Discovery →',
+                  'Kesfe Basla →',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -671,7 +672,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 20),
           const Text(
-            'Session Complete!',
+            'Oturum Tamamlandi!',
             style: TextStyle(
               color: AppColors.textPrimary,
               fontSize: 22,
@@ -680,7 +681,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            '"${task.title}" has been mastered.',
+            '"${task.title}" gorevi tamamlandi.',
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: AppColors.textSecondary,

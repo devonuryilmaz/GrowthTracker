@@ -647,7 +647,7 @@ class _AppLogo extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         const Text(
-          'Cognitive Sanctuary',
+          'Growth Tracker',
           style: TextStyle(
             color: AppColors.textPrimary,
             fontSize: 13,

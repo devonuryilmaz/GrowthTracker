@@ -144,7 +144,7 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => StatsProvider()),
       ],
       child: MaterialApp(
-        title: 'Cognitive Sanctuary',
+        title: 'Growth Tracker',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.darkTheme,
         themeMode: ThemeMode.dark,
