@@ -15,6 +15,40 @@ class StatsProvider extends ChangeNotifier {
   int get totalCompleted => _stats?['totalCompleted'] as int? ?? 0;
   List<dynamic> get byCategory => _stats?['byCategory'] as List<dynamic>? ?? [];
 
+  int get currentStreak {
+    if (_history.isEmpty) return 0;
+    final completedDates = _history
+        .where((t) => t.completedAt != null)
+        .map((t) {
+          final d = t.completedAt!.toLocal();
+          return DateTime(d.year, d.month, d.day);
+        })
+        .toSet()
+        .toList()
+      ..sort((a, b) => b.compareTo(a));
+    if (completedDates.isEmpty) return 0;
+    final today = DateTime.now();
+    final todayNorm = DateTime(today.year, today.month, today.day);
+    int streak = 0;
+    DateTime expected = todayNorm;
+    for (final date in completedDates) {
+      if (date == expected) {
+        streak++;
+        expected = expected.subtract(const Duration(days: 1));
+      } else if (date.isBefore(expected)) {
+        break;
+      }
+    }
+    return streak;
+  }
+
+  int get weeklyCompleted {
+    final cutoff = DateTime.now().subtract(const Duration(days: 7));
+    return _history
+        .where((t) => t.completedAt != null && t.completedAt!.isAfter(cutoff))
+        .length;
+  }
+
   final ApiService _api = ApiService();
 
   Future<void> loadHistory(String userId, {int days = 30}) async {

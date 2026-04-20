@@ -1,7 +1,7 @@
 # GrowthTracker — Yol Haritası & İş Takip Dokümanı
 
 > **Vizyon:** Her meslek grubuna hitap eden, AI destekli Kişisel Gelişim Koçu.  
-> **Son Güncelleme:** 20 Nisan 2026
+> **Son Güncelleme:** 20 Nisan 2026 (v3)
 
 ---
 
@@ -233,6 +233,82 @@
 
 ---
 
+### FAZ 13 — Home Screen: Boş Durum İyileştirmesi
+> **Hedef:** Görev seçilmemişken Home ekranını anlamlı ve motive edici hale getir.
+
+- [x] **13.1** Boş durum için zengin bir karşılama ekranı tasarla:
+  - Kullanıcıya özel selamlama + günün tarihi
+  - Mevcut streak bilgisi ve toplam tamamlama sayısı
+  - Kategori ikonlarıyla "Bugün hangi alanda çalışmak istersin?" yönlendirme kartı
+- [x] **13.2** Öne çıkan "Görevleri Keşfet" CTA butonu — tıklayınca Discovery ekranına götürsün
+- [x] **13.3** Motivasyonel günlük söz veya ipucu kartı (statik veya rotasyonlu)
+- [x] **13.4** Mini istatistik widget: "Bu hafta X görev tamamladın 🎉"
+
+---
+
+### FAZ 14 — Günlük 3 Görev Seçimi
+> **Hedef:** Kullanıcının günde tek değil, 3 farklı görev seçip tamamlayabilmesini sağla.
+
+- [ ] **14.1** Backend — çoklu seçim desteği:
+  - `POST /api/dailytasks/{id}/select` — aynı kullanıcı aynı gün 3'e kadar görev seçebilmeli (limit kontrolü ekle)
+  - `GET /api/dailytasks/today` zaten 3 görev dönüyor, seçim sayısı kontrol edilmeli
+- [ ] **14.2** `TaskProvider`'ı güncelle:
+  - `activeTask` (tekil) → `activeTasks` (liste, max 3) haline getir
+  - Her görev bağımsız tamamlanabilmeli
+- [ ] **14.3** `HomeScreen`'i güncelle:
+  - 3 aktif görev için dikey liste veya swipeable kart grubu
+  - Her kartın kendi tamamlama butonu ve durumu
+  - Progress bar: "X/3 tamamlandı" mantığına geçir
+- [ ] **14.4** `TaskDiscoveryScreen`'i güncelle:
+  - Seçili görev sayısını göster ("2/3 seçildi")
+  - Seçili görevleri işaretli (checkmark) göster
+  - 3 seçim tamamlanınca otomatik Home'a yönlendir
+- [ ] **14.5** Migration: `DailyTask.IsSelected` boolean yerine `SelectionOrder` (int?) alanı düşünülebilir — tek seçim yerine sıralı seçim desteği
+
+---
+
+### FAZ 15 — Journey: Renkli Kategorili Takvim
+> **Hedef:** Takvimde tamamlanan görevleri kategorilerine göre renkli dot'larla göster.
+
+- [ ] **15.1** `table_calendar` paketini `pubspec.yaml`'a ekle
+- [ ] **15.2** Her kategori için sabit renk kodu tanımla (helper/constants dosyasına):
+  - 🔴 Sağlık & Fitness
+  - 🔵 Kariyer & Üretkenlik
+  - 🟣 Zihinsel Gelişim
+  - 🟠 Öğrenme & Beceri
+  - 🟢 Mindfulness & Stres
+  - 🟡 Finansal Okuryazarlık
+- [ ] **15.3** `JourneyScreen` takvim görünümünü `table_calendar` ile implemente et:
+  - Tamamlanan her güne kategorisine göre renkli dot(lar) ekle
+  - Birden fazla kategori aynı günde tamamlandıysa birden fazla dot
+  - Takvim günlerine tıklandığında o günün görev listesi alt panelde açılsın
+- [ ] **15.4** `GET /api/dailytasks/history` response'una `category` alanı dahil edildiğini doğrula (zaten var, frontend'de kullanılmalı)
+- [ ] **15.5** Renk efsanesi (legend) widget'ı ekle — hangi renk hangi kategori
+
+---
+
+### FAZ 16 — Kullanıcı Kimlik Doğrulama (Firebase Auth)
+> **Hedef:** Kullanıcı verilerini cihaz bağımsız hale getir; uygulama silinse veya cihaz değişse veriler korunsun.
+
+- [ ] **16.1** Flutter: `firebase_auth` paketini ekle
+- [ ] **16.2** Google Sign-In entegrasyonu:
+  - `google_sign_in` paketi ekle
+  - `LoginScreen`'e "Google ile Devam Et" butonu ekle
+  - Firebase Auth'dan `uid` al
+- [ ] **16.3** Apple Sign-In entegrasyonu (iOS zorunlu):
+  - `sign_in_with_apple` paketi ekle
+  - iOS entegrasyon ayarları (Capabilities, entitlements)
+- [ ] **16.4** Onboarding akışını Auth'a bağla:
+  - Yeni kullanıcı: Auth → Onboarding (isim/yaş/meslek/odak) → backend sync
+  - Dönüş kullanıcısı: Auth → direkt Home
+  - Firebase `uid` → backend `User.Id` (Guid) eşlemesi için `UsersController` güncelle
+- [ ] **16.5** Backend: `UserSyncRequest`'e `FirebaseUid` (string) alanı ekle; `GetOrCreateUser`'ı uid ile de arayabilecek şekilde güncelle
+- [ ] **16.6** `SharedPreferences`'taki `userId` → Firebase `uid` ile senkron tut
+- [ ] **16.7** Logout: Firebase Auth sign-out + SharedPreferences temizle
+- [ ] **16.8** `sendTokenToServer` null userId sorununu bu fazda çöz — Auth sonrası uid mevcut olacak
+
+---
+
 ### FAZ 12 — Entegrasyon Testleri & Son Dokunuşlar
 > **Hedef:** Uçtan uca akışların doğru çalıştığından emin ol.
 
@@ -261,6 +337,12 @@ FAZ 1 (Entity Modeli)
               └──→ FAZ 10 (Settings)
                     └──→ FAZ 11 (Navigasyon & UX)
                           └──→ FAZ 12 (Test & Polish)
+
+Yeni fazlar (bağımsız geliştirilebilir):
+FAZ 13 (Home Boş Durum) — FAZ 8 tamamlandıktan sonra
+FAZ 14 (3 Görev Seçimi) — Backend FAZ 2 + Flutter FAZ 5 tamamlandıktan sonra
+FAZ 15 (Renkli Takvim) — FAZ 9 tamamlandıktan sonra
+FAZ 16 (Firebase Auth) — FAZ 6 (Onboarding) tamamlandıktan sonra; FAZ 14 ve 12.7 ile paralel
 ```
 
 **Paralel çalışılabilir:**
@@ -285,6 +367,9 @@ FAZ 1 (Entity Modeli)
 | `table_calendar` | Takvim görünümü (Journey) | ❌ Eklenmedi |
 | `shimmer` | Yükleme placeholder animasyonları | ❌ Eklenmedi |
 | `smooth_page_indicator` | Onboarding adım göstergesi | ❌ Eklenmedi |
+| `firebase_auth` | Kullanıcı kimlik doğrulama (FAZ 16) | ❌ Eklenmedi |
+| `google_sign_in` | Google ile giriş (FAZ 16) | ❌ Eklenmedi |
+| `sign_in_with_apple` | Apple ile giriş (FAZ 16, iOS) | ❌ Eklenmedi |
 
 ---
 

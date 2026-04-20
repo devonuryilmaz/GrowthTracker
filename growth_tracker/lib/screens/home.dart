@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:growth_tracker/models/daily_task.dart';
+import 'package:growth_tracker/providers/stats_provider.dart';
 import 'package:growth_tracker/providers/task_provider.dart';
 import 'package:growth_tracker/providers/user_provider.dart';
 import 'package:growth_tracker/screens/task_discovery_screen.dart';
@@ -28,7 +29,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _load() async {
     final user = context.read<UserProvider>().user;
     if (user == null) return;
-    await context.read<TaskProvider>().loadTodayTasks(user.id);
+    await Future.wait([
+      context.read<TaskProvider>().loadTodayTasks(user.id),
+      context.read<StatsProvider>().loadStats(user.id),
+      context.read<StatsProvider>().loadHistory(user.id),
+    ]);
     _syncTimer();
   }
 
@@ -581,71 +586,228 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildNoTask() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          const SizedBox(height: 40),
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              gradient: AppColors.gradientPrimary,
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.explore_rounded,
-                color: Colors.white, size: 36),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'Kesif Seni Bekliyor',
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Aktif oturum yok. Baslamak icin\nbugunun gelisim yollarini kesfet.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 14,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: AppColors.gradientPrimary,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: ElevatedButton(
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                      builder: (_) => const TaskDiscoveryScreen()),
+    final user = context.read<UserProvider>().user;
+    final hour = DateTime.now().hour;
+    final greeting =
+        hour < 12 ? 'Günaydın' : hour < 18 ? 'İyi günler' : 'İyi akşamlar';
+    final name = user?.name ?? '';
+    const quotes = [
+      '"Her büyük yolculuk küçük bir adımla başlar."',
+      '"Bugün yaptıkların, yarınını şekillendirir."',
+      '"Süreklilik, mükemmellikten daha güçlüdür."',
+      '"Küçük adımlar, büyük sonuçlar doğurur."',
+      '"Gelişim bir hedef değil, bir yolculuktur."',
+      '"En iyi zaman şimdi. İkinci en iyi zaman da şimdi."',
+    ];
+    final quote = quotes[DateTime.now().day % quotes.length];
+    final focusArea = user?.focusArea ?? '';
+
+    return Consumer<StatsProvider>(
+      builder: (context, stats, _) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 8),
+              Text(
+                '$greeting${name.isNotEmpty ? ", $name!" : "!"} 👋',
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  height: 1.2,
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  shape: RoundedRectangleBorder(
+              ),
+              const SizedBox(height: 4),
+              Text(
+                DateFormat('d MMMM, EEEE').format(DateTime.now()),
+                style: const TextStyle(
+                    color: AppColors.textMuted, fontSize: 13),
+              ),
+              const SizedBox(height: 20),
+              _buildEmptyStatsRow(stats),
+              const SizedBox(height: 16),
+              _buildMotivationCard(quote),
+              const SizedBox(height: 16),
+              if (focusArea.isNotEmpty) ...[
+                _buildFocusHintCard(focusArea),
+                const SizedBox(height: 16),
+              ],
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: AppColors.gradientPrimary,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                ),
-                child: const Text(
-                  'Kesfe Basla →',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => const TaskDiscoveryScreen()),
+                    ),
+                    icon: const Icon(Icons.explore_rounded,
+                        color: Colors.white, size: 18),
+                    label: const Text(
+                      'Görevleri Keşfet',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
                   ),
                 ),
               ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyStatsRow(StatsProvider stats) {
+    return Row(
+      children: [
+        _buildStatCard('🔥', '${stats.currentStreak}', 'Gün Serisi',
+            AppColors.warning),
+        const SizedBox(width: 10),
+        _buildStatCard(
+            '📅', '${stats.weeklyCompleted}', 'Bu Hafta', AppColors.primary),
+        const SizedBox(width: 10),
+        _buildStatCard(
+            '✅', '${stats.totalCompleted}', 'Toplam', AppColors.success),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(
+      String icon, String value, String label, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.cardBorder),
+        ),
+        child: Column(
+          children: [
+            Text(icon, style: const TextStyle(fontSize: 18)),
+            const SizedBox(height: 6),
+            Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+              ),
             ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMotivationCard(String quote) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: AppColors.gradientPrimary,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          const Text('💡', style: TextStyle(fontSize: 24)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              quote,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                height: 1.5,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFocusHintCard(String focusArea) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'BUGÜN HANGİ ALANDA ÇALIŞMAK İSTERSİN?',
+            style: TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: focusArea
+                .split(', ')
+                .where((s) => s.isNotEmpty)
+                .map((area) {
+              final color = AppTheme.categoryColor(area);
+              return Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: color.withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(AppTheme.categoryIcon(area), color: color, size: 14),
+                    const SizedBox(width: 6),
+                    Text(
+                      area,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
           ),
         ],
       ),

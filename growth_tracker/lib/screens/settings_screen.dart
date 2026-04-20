@@ -209,7 +209,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   spacing: 6,
                   runSpacing: 6,
                   children: [
-                    _statChip('${user?.age ?? 0}', 'Yaş'),
+                    _statChip('${user?.age ?? 0} Yaş', ''),
                     ...?(user?.focusArea as String?)
                         ?.split(', ')
                         .where((s) => s.isNotEmpty)
