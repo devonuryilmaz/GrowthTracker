@@ -1,8 +1,8 @@
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:table_calendar/table_calendar.dart';
 import 'package:growth_tracker/models/daily_task.dart';
 import 'package:growth_tracker/providers/stats_provider.dart';
 import 'package:growth_tracker/providers/user_provider.dart';
@@ -17,6 +17,9 @@ class JourneyScreen extends StatefulWidget {
 
 class _JourneyScreenState extends State<JourneyScreen> {
   bool _showCalendar = false;
+  bool _useTableCalendar = true;
+  DateTime _focusedDay = DateTime.now();
+  DateTime? _selectedDay;
 
   @override
   void initState() {
@@ -34,28 +37,65 @@ class _JourneyScreenState extends State<JourneyScreen> {
     ]);
   }
 
-  int _streak(List<DailyTask> history) {
-    final completed = history
-        .where((t) => t.isCompleted && t.completedAt != null)
-        .toList()
-      ..sort((a, b) => b.completedAt!.compareTo(a.completedAt!));
-    if (completed.isEmpty) return 0;
+  List<DailyTask> _eventsForDay(DateTime day, List<DailyTask> history) {
+    final key = DateFormat('yyyy-MM-dd').format(day);
+    return history
+        .where((t) =>
+            t.isCompleted &&
+            t.completedAt != null &&
+            DateFormat('yyyy-MM-dd').format(t.completedAt!) == key)
+        .toList();
+  }
 
-    int streak = 0;
-    DateTime cursor = DateTime.now();
-    final seen = <String>{};
-    for (final t in completed) {
-      final key = DateFormat('yyyy-MM-dd').format(t.completedAt!);
-      final diff = cursor
-          .difference(DateTime.parse(key))
-          .inDays;
-      if (diff > 1) break;
-      if (seen.add(key)) {
-        streak++;
-        cursor = DateTime.parse(key);
-      }
-    }
-    return streak;
+  void _showDayTasksSheet(List<DailyTask> tasks, DateTime day) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.background,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.cardBorder,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            Text(
+              DateFormat('d MMMM EEEE').format(day),
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (tasks.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Center(
+                  child: Text(
+                    'Bu gün tamamlanan görev yok.',
+                    style: TextStyle(color: AppColors.textMuted),
+                  ),
+                ),
+              )
+            else
+              ...tasks.map((t) => _journalEntry(t)),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -92,7 +132,7 @@ class _JourneyScreenState extends State<JourneyScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Growth History',
+            'Büyüme Geçmişi',
             style: TextStyle(
               color: AppColors.textPrimary,
               fontSize: 20,
@@ -100,7 +140,7 @@ class _JourneyScreenState extends State<JourneyScreen> {
             ),
           ),
           Text(
-            'Tracking your cognitive evolution',
+            'Bilişsel gelişimini takip ediyoruz',
             style: TextStyle(
               color: AppColors.textMuted,
               fontSize: 11,
@@ -119,8 +159,8 @@ class _JourneyScreenState extends State<JourneyScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _toggleTab('Holistic', !_showCalendar),
-              _toggleTab('Overview', _showCalendar),
+              _toggleTab('Holistik', !_showCalendar),
+              _toggleTab('Genel Bakış', _showCalendar),
             ],
           ),
         ),
@@ -130,7 +170,7 @@ class _JourneyScreenState extends State<JourneyScreen> {
 
   Widget _toggleTab(String label, bool active) {
     return GestureDetector(
-      onTap: () => setState(() => _showCalendar = label == 'Overview'),
+      onTap: () => setState(() => _showCalendar = label == 'Genel Bakış'),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
@@ -152,14 +192,6 @@ class _JourneyScreenState extends State<JourneyScreen> {
   Widget _buildContent(StatsProvider provider) {
     final history = provider.history;
     final stats = provider.stats;
-    final total = provider.totalCompleted;
-    final streak = _streak(history);
-    final thisWeek = history
-        .where((t) =>
-            t.isCompleted &&
-            t.completedAt != null &&
-            DateTime.now().difference(t.completedAt!).inDays < 7)
-        .length;
 
     return Padding(
       padding: const EdgeInsets.all(20),
@@ -167,61 +199,58 @@ class _JourneyScreenState extends State<JourneyScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Summary cards
-          Row(
-            children: [
-              _summaryCard('Total', total.toString(), Icons.check_circle_rounded, AppColors.success),
-              const SizedBox(width: 10),
-              _summaryCard('Streak', '$streak days', Icons.local_fire_department_rounded, AppColors.warning),
-              const SizedBox(width: 10),
-              _summaryCard('This Week', thisWeek.toString(), Icons.calendar_today_rounded, AppColors.primary),
-            ],
-          ),
+          _buildEmptyStatsRow(provider),
           const SizedBox(height: 20),
           if (!_showCalendar) ...[
             _buildProgressSection(stats, history),
           ] else ...[
             _buildCalendarView(history),
           ],
+          if (!_showCalendar) ...[
+            const SizedBox(height: 20),
+            _buildAttributeBalance(stats),
+          ],
           const SizedBox(height: 20),
           _buildActivityJournal(history),
-          const SizedBox(height: 20),
-          if (!_showCalendar) _buildAttributeBalance(stats),
-          const SizedBox(height: 24),
         ],
       ),
     );
   }
 
-  Widget _summaryCard(String label, String value, IconData icon, Color color) {
+  Widget _buildEmptyStatsRow(StatsProvider stats) {
+    return Row(
+      children: [
+        _buildStatCard('🔥', '${stats.currentStreak}', 'Gün Serisi', AppColors.warning),
+        const SizedBox(width: 10),
+        _buildStatCard('📅', '${stats.weeklyCompleted}', 'Bu Hafta', AppColors.primary),
+        const SizedBox(width: 10),
+        _buildStatCard('✅', '${stats.totalCompleted}', 'Toplam', AppColors.success),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(String icon, String value, String label, Color color) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: AppColors.cardBorder),
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 30,
-              height: 30,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color, size: 16),
-            ),
-            const SizedBox(height: 8),
+            Text(icon, style: const TextStyle(fontSize: 18)),
+            const SizedBox(height: 6),
             Text(
               value,
               style: TextStyle(
                 color: color,
-                fontSize: 18,
+                fontSize: 20,
                 fontWeight: FontWeight.w700,
               ),
             ),
+            const SizedBox(height: 2),
             Text(
               label,
               style: const TextStyle(
@@ -236,132 +265,230 @@ class _JourneyScreenState extends State<JourneyScreen> {
     );
   }
 
-  Widget _buildProgressSection(Map<String, dynamic>? stats, List<DailyTask> history) {
-    final total = stats?['totalCompleted'] as int? ?? 1;
-    final pct = total > 0 ? math.min((total / math.max(total * 1.2, 1)), 1.0) : 0.0;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Bar chart
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: AppColors.gradientCard,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.cardBorder),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Holistic Progress',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Last 30 days reflection',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 11),
-              ),
-              const SizedBox(height: 16),
-              _WeeklyBarChart(history: history),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        // Formula card
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF3D2F8F), Color(0xFF1A1830)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+  Widget _buildProgressSection(
+      Map<String, dynamic>? stats, List<DailyTask> history) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: AppColors.gradientCard,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Holistik İlerleme',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
             ),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.primary.withOpacity(0.3)),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'YOUR FORMULA IS:',
-                style: TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 10,
-                  letterSpacing: 1.2,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '${(pct * 100).round()}%',
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 48,
-                      fontWeight: FontWeight.w800,
-                      height: 1,
-                      letterSpacing: -2,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'You are between 9AM and 11PM. AI estimates you will stay with flow.',
-                style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 12,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                height: 38,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: AppColors.gradientPrimary,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    child: const Text(
-                      'Optimize Schedule',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          const SizedBox(height: 4),
+          const Text(
+            'Son 7 günlük tamamlanan görevler',
+            style: TextStyle(color: AppColors.textMuted, fontSize: 11),
           ),
-        ),
-      ],
+          const SizedBox(height: 16),
+          _WeeklyBarChart(history: history),
+        ],
+      ),
     );
   }
 
   Widget _buildCalendarView(List<DailyTask> history) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Toggle between grid and table calendar
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.cardBorder),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _calendarToggleTab('Takvim', _useTableCalendar),
+              _calendarToggleTab('Izgara', !_useTableCalendar),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (_useTableCalendar)
+          _buildTableCalendar(history)
+        else
+          _buildGridCalendarView(history),
+      ],
+    );
+  }
+
+  Widget _calendarToggleTab(String label, bool active) {
+    return GestureDetector(
+      onTap: () => setState(() => _useTableCalendar = label == 'Takvim'),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          gradient: active ? AppColors.gradientPrimary : null,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: active ? Colors.white : AppColors.textMuted,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTableCalendar(List<DailyTask> history) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.cardBorder),
+          ),
+          child: TableCalendar<DailyTask>(
+            firstDay: DateTime.now().subtract(const Duration(days: 90)),
+            lastDay: DateTime.now(),
+            focusedDay: _focusedDay,
+            calendarFormat: CalendarFormat.month,
+            selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+            eventLoader: (day) => _eventsForDay(day, history),
+            onDaySelected: (selectedDay, focusedDay) {
+              setState(() {
+                _selectedDay = selectedDay;
+                _focusedDay = focusedDay;
+              });
+              final tasks = _eventsForDay(selectedDay, history);
+              _showDayTasksSheet(tasks, selectedDay);
+            },
+            onPageChanged: (focusedDay) {
+              setState(() => _focusedDay = focusedDay);
+            },
+            availableCalendarFormats: const {
+              CalendarFormat.month: 'Ay',
+            },
+            calendarStyle: CalendarStyle(
+              outsideDaysVisible: false,
+              todayDecoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              todayTextStyle: const TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w700,
+              ),
+              selectedDecoration: const BoxDecoration(
+                color: AppColors.primary,
+                shape: BoxShape.circle,
+              ),
+              selectedTextStyle: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+              defaultTextStyle: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 13,
+              ),
+              weekendTextStyle: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 13,
+              ),
+              disabledTextStyle: const TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 13,
+              ),
+              markerSize: 6,
+              markersMaxCount: 3,
+              markersAlignment: Alignment.bottomCenter,
+              markerMargin: const EdgeInsets.symmetric(horizontal: 0.5),
+            ),
+            headerStyle: const HeaderStyle(
+              formatButtonVisible: false,
+              titleCentered: true,
+              titleTextStyle: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
+              leftChevronIcon: Icon(
+                Icons.chevron_left_rounded,
+                color: AppColors.textSecondary,
+              ),
+              rightChevronIcon: Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            daysOfWeekStyle: const DaysOfWeekStyle(
+              weekdayStyle: TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+              weekendStyle: TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            calendarBuilders: CalendarBuilders(
+              markerBuilder: (context, day, events) {
+                if (events.isEmpty) return const SizedBox.shrink();
+                final shown = events.take(3).toList();
+                return Positioned(
+                  bottom: 2,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: shown.map((task) {
+                      final color = AppTheme.categoryColor(task.category);
+                      return Container(
+                        width: 5,
+                        height: 5,
+                        margin: const EdgeInsets.symmetric(horizontal: 0.5),
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildCategoryLegend(),
+      ],
+    );
+  }
+
+  Widget _buildGridCalendarView(List<DailyTask> history) {
     final completedDates = history
         .where((t) => t.isCompleted && t.completedAt != null)
         .map((t) => DateFormat('yyyy-MM-dd').format(t.completedAt!))
         .toSet();
+
+    // Build category lookup: date key → list of tasks
+    final Map<String, List<DailyTask>> dateTaskMap = {};
+    for (final t in history) {
+      if (t.isCompleted && t.completedAt != null) {
+        final key = DateFormat('yyyy-MM-dd').format(t.completedAt!);
+        dateTaskMap.putIfAbsent(key, () => []).add(t);
+      }
+    }
+
     final today = DateTime.now();
     final todayKey = DateFormat('yyyy-MM-dd').format(today);
 
@@ -375,18 +502,9 @@ class _JourneyScreenState extends State<JourneyScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Activity Calendar',
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+            children: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
                 .map((d) => Text(d,
                     style: const TextStyle(
                         color: AppColors.textMuted,
@@ -401,37 +519,97 @@ class _JourneyScreenState extends State<JourneyScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: List.generate(7, (day) {
-                  final date =
-                      today.subtract(Duration(days: (4 - week) * 7 + (6 - day)));
+                  final date = today
+                      .subtract(Duration(days: (4 - week) * 7 + (6 - day)));
                   final key = DateFormat('yyyy-MM-dd').format(date);
                   final isToday = key == todayKey;
-                  final isCompleted = completedDates.contains(key);
                   final isFuture = date.isAfter(today);
+                  final tasks = dateTaskMap[key] ?? [];
+                  final isCompleted = completedDates.contains(key);
 
-                  return Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: isFuture
-                          ? Colors.transparent
-                          : isCompleted
-                              ? AppColors.primary.withOpacity(0.7)
-                              : AppColors.surfaceElevated,
-                      borderRadius: BorderRadius.circular(7),
-                      border: isToday
-                          ? Border.all(color: AppColors.primary, width: 2)
+                  // Pick the dominant color (first task's category)
+                  Color? dotColor;
+                  if (!isFuture && tasks.isNotEmpty) {
+                    dotColor = AppTheme.categoryColor(tasks.first.category);
+                  }
+
+                  return GestureDetector(
+                    onTap: isFuture || tasks.isEmpty
+                        ? null
+                        : () => _showDayTasksSheet(tasks, date),
+                    child: Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: isFuture
+                            ? Colors.transparent
+                            : isCompleted
+                                ? (dotColor ?? AppColors.primary)
+                                    .withOpacity(0.75)
+                                : AppColors.surfaceElevated,
+                        borderRadius: BorderRadius.circular(7),
+                        border: isToday
+                            ? Border.all(color: AppColors.primary, width: 2)
+                            : null,
+                      ),
+                      child: isCompleted && !isFuture
+                          ? const Icon(Icons.check_rounded,
+                              color: Colors.white, size: 12)
                           : null,
                     ),
-                    child: isCompleted && !isFuture
-                        ? const Icon(Icons.check_rounded,
-                            color: Colors.white, size: 12)
-                        : null,
                   );
                 }),
               ),
             );
           }),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryLegend() {
+    const categories = [
+      ('Sağlık', AppColors.categoryHealth),
+      ('Kariyer', AppColors.categoryCareer),
+      ('Zihinsel', AppColors.categoryMind),
+      ('Öğrenme', AppColors.categoryLearning),
+      ('Yaratıcı', AppColors.categoryMindfulness),
+      ('Finansal', AppColors.categoryFinancial),
+    ];
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: Wrap(
+        spacing: 16,
+        runSpacing: 8,
+        children: categories.map((cat) {
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: cat.$2,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 5),
+              Text(
+                cat.$1,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          );
+        }).toList(),
       ),
     );
   }
@@ -449,7 +627,7 @@ class _JourneyScreenState extends State<JourneyScreen> {
         Row(
           children: [
             const Text(
-              'Activity Journal',
+              'Aktivite Günlüğü',
               style: TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: 16,
@@ -467,7 +645,7 @@ class _JourneyScreenState extends State<JourneyScreen> {
             child: Padding(
               padding: EdgeInsets.all(24),
               child: Text(
-                'No completed sessions yet',
+                'Henüz tamamlanan oturum yok',
                 style: TextStyle(color: AppColors.textMuted),
               ),
             ),
@@ -542,11 +720,35 @@ class _JourneyScreenState extends State<JourneyScreen> {
   Widget _buildAttributeBalance(Map<String, dynamic>? stats) {
     final byCategory = stats?['byCategory'] as List<dynamic>? ?? [];
 
+    // Sabit 6 kategori — API'den gelen veriyle eşleştir
+    const allCategories = [
+      ('Sağlık', 'sağlık'),
+      ('Kariyer', 'kariyer'),
+      ('Zihinsel', 'zihinsel'),
+      ('Öğrenme', 'öğrenme'),
+      ('Mindfulness', 'mindfulness'),
+      ('Finansal', 'finansal'),
+    ];
+
+    Map<String, Map<String, dynamic>> lookup = {};
+    for (final item in byCategory) {
+      final key = (item['category'] as String? ?? '').toLowerCase();
+      lookup[key] = Map<String, dynamic>.from(item as Map);
+    }
+
+    String _formatTime(int minutes) {
+      if (minutes == 0) return '—';
+      if (minutes < 60) return '${minutes}dk';
+      final h = minutes ~/ 60;
+      final m = minutes % 60;
+      return m == 0 ? '${h}sa' : '${h}sa ${m}dk';
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Attribute Balance',
+          'Kategori Dengesi',
           style: TextStyle(
             color: AppColors.textPrimary,
             fontSize: 16,
@@ -554,92 +756,79 @@ class _JourneyScreenState extends State<JourneyScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.cardBorder),
-          ),
-          child: Column(
-            children: [
-              // Pentagon radar chart
-              SizedBox(
-                width: double.infinity,
-                height: 180,
-                child: _RadarChart(
-                  categories: byCategory.isEmpty
-                      ? [
-                          {'name': 'Kariyer', 'count': 0},
-                          {'name': 'Zihinsel', 'count': 0},
-                          {'name': 'Sağlık', 'count': 0},
-                          {'name': 'Finansal', 'count': 0},
-                          {'name': 'Mindfulness', 'count': 0},
-                        ]
-                      : byCategory,
+        GridView.count(
+          crossAxisCount: 3,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          childAspectRatio: 0.9,
+          children: allCategories.map((cat) {
+            final label = cat.$1;
+            final key = cat.$2;
+            final data = lookup[key];
+            final count = (data?['completedCount'] as num?)?.toInt() ?? 0;
+            final minutes = (data?['totalMinutes'] as num?)?.toInt() ?? 0;
+            final color = AppTheme.categoryColor(key);
+            final icon = AppTheme.categoryIcon(key);
+            final hasData = count > 0;
+
+            return Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color:
+                      hasData ? color.withOpacity(0.35) : AppColors.cardBorder,
                 ),
               ),
-              const SizedBox(height: 16),
-              // Category legend bars
-              ...( byCategory.isEmpty
-                  ? [
-                      {'name': 'Kariyer', 'count': 0},
-                      {'name': 'Sağlık', 'count': 0},
-                      {'name': 'Zihinsel', 'count': 0},
-                    ]
-                  : byCategory.take(4).toList()
-              ).map((cat) {
-                final name = cat['name']?.toString() ?? '';
-                final count = (cat['count'] as num?)?.toInt() ?? 0;
-                final maxCount = byCategory.isEmpty
-                    ? 1
-                    : (byCategory
-                            .map((c) => (c['count'] as num?)?.toInt() ?? 0)
-                            .reduce((a, b) => a > b ? a : b))
-                        .clamp(1, 99999);
-                final pct = count / maxCount;
-                final color = AppTheme.categoryColor(name);
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 80,
-                        child: Text(
-                          name,
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: pct,
-                            minHeight: 6,
-                            backgroundColor: AppColors.surfaceElevated,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(color),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '$count',
-                        style: const TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(hasData ? 0.18 : 0.07),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon,
+                        color: hasData ? color : color.withOpacity(0.35),
+                        size: 18),
                   ),
-                );
-              }),
-            ],
-          ),
+                  const SizedBox(height: 8),
+                  Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color:
+                          hasData ? AppColors.textPrimary : AppColors.textMuted,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    hasData ? '$count görev' : '0 görev',
+                    style: TextStyle(
+                      color: hasData ? color : AppColors.textMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    _formatTime(minutes),
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
         ),
       ],
     );
@@ -647,9 +836,9 @@ class _JourneyScreenState extends State<JourneyScreen> {
 
   String _timeAgo(DateTime dt) {
     final diff = DateTime.now().difference(dt);
-    if (diff.inDays >= 1) return '${diff.inDays}d ago';
-    if (diff.inHours >= 1) return '${diff.inHours}h ago';
-    return '${diff.inMinutes}m ago';
+    if (diff.inDays >= 1) return '${diff.inDays}g önce';
+    if (diff.inHours >= 1) return '${diff.inHours}s önce';
+    return '${diff.inMinutes}dk önce';
   }
 }
 
@@ -676,7 +865,7 @@ class _WeeklyBarChart extends StatelessWidget {
     final maxCount = days.map((e) => e.value).reduce(math.max).clamp(1, 99999);
 
     return SizedBox(
-      height: 100,
+      height: 120,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: days.map((e) {
@@ -687,12 +876,31 @@ class _WeeklyBarChart extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
+                  if (e.value > 0)
+                    Text(
+                      '${e.value}',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    )
+                  else
+                    const SizedBox(height: 12),
+                  const SizedBox(height: 2),
                   Flexible(
                     child: FractionallySizedBox(
                       heightFactor: ratio.clamp(0.05, 1.0),
                       child: Container(
                         decoration: BoxDecoration(
-                          gradient: AppColors.gradientPrimary,
+                          gradient: e.value > 0
+                              ? AppColors.gradientPrimary
+                              : const LinearGradient(
+                                  colors: [
+                                    Color(0xFFE0DCFF),
+                                    Color(0xFFE0DCFF)
+                                  ],
+                                ),
                           borderRadius: BorderRadius.circular(6),
                         ),
                       ),
@@ -715,118 +923,6 @@ class _WeeklyBarChart extends StatelessWidget {
       ),
     );
   }
-}
-
-// ── Radar/Pentagon Chart ──────────────────────────────────────────────────────
-
-class _RadarChart extends StatelessWidget {
-  final List<dynamic> categories;
-  const _RadarChart({required this.categories});
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _RadarPainter(categories: categories),
-    );
-  }
-}
-
-class _RadarPainter extends CustomPainter {
-  final List<dynamic> categories;
-  _RadarPainter({required this.categories});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = math.min(size.width, size.height) / 2 - 20;
-    final sides = math.max(categories.length, 5);
-    final maxVal = categories.isEmpty
-        ? 1
-        : (categories.map((c) => (c['count'] as num?)?.toDouble() ?? 0.0).reduce(math.max)).clamp(1.0, double.infinity);
-
-    // Background grid
-    final gridPaint = Paint()
-      ..color = AppColors.cardBorder
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
-
-    for (int level = 1; level <= 4; level++) {
-      final r = radius * level / 4;
-      final path = Path();
-      for (int i = 0; i < sides; i++) {
-        final angle = (2 * math.pi * i / sides) - math.pi / 2;
-        final x = center.dx + r * math.cos(angle);
-        final y = center.dy + r * math.sin(angle);
-        if (i == 0) {
-          path.moveTo(x, y);
-        } else {
-          path.lineTo(x, y);
-        }
-      }
-      path.close();
-      canvas.drawPath(path, gridPaint);
-    }
-
-    // Spoke lines
-    for (int i = 0; i < sides; i++) {
-      final angle = (2 * math.pi * i / sides) - math.pi / 2;
-      canvas.drawLine(
-        center,
-        Offset(center.dx + radius * math.cos(angle),
-            center.dy + radius * math.sin(angle)),
-        gridPaint,
-      );
-    }
-
-    if (categories.isEmpty) return;
-
-    // Data polygon
-    final fillPaint = Paint()
-      ..color = AppColors.primary.withOpacity(0.25)
-      ..style = PaintingStyle.fill;
-    final strokePaint = Paint()
-      ..color = AppColors.primary
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-
-    final dataPath = Path();
-    for (int i = 0; i < sides; i++) {
-      final catIndex = i % categories.length;
-      final val = (categories[catIndex]['count'] as num?)?.toDouble() ?? 0.0;
-      final ratio = (val / maxVal).clamp(0.05, 1.0);
-      final angle = (2 * math.pi * i / sides) - math.pi / 2;
-      final x = center.dx + radius * ratio * math.cos(angle);
-      final y = center.dy + radius * ratio * math.sin(angle);
-      if (i == 0) {
-        dataPath.moveTo(x, y);
-      } else {
-        dataPath.lineTo(x, y);
-      }
-    }
-    dataPath.close();
-    canvas.drawPath(dataPath, fillPaint);
-    canvas.drawPath(dataPath, strokePaint);
-
-    // Labels
-    final tp = TextPainter(textDirection: ui.TextDirection.ltr);
-    for (int i = 0; i < math.min(categories.length, sides); i++) {
-      final angle = (2 * math.pi * i / sides) - math.pi / 2;
-      final labelRadius = radius + 16;
-      final x = center.dx + labelRadius * math.cos(angle);
-      final y = center.dy + labelRadius * math.sin(angle);
-      final name = categories[i]['name']?.toString() ?? '';
-      tp.text = TextSpan(
-        text: name.length > 8 ? '${name.substring(0, 7)}…' : name,
-        style: const TextStyle(color: AppColors.textMuted, fontSize: 9),
-      );
-      tp.layout();
-      tp.paint(canvas,
-          Offset(x - tp.width / 2, y - tp.height / 2));
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────

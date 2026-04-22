@@ -246,44 +246,46 @@
 
 ---
 
-### FAZ 14 — Günlük 3 Görev Seçimi
-> **Hedef:** Kullanıcının günde tek değil, 3 farklı görev seçip tamamlayabilmesini sağla.
+### FAZ 14 — Günlük 3 Görev (Sıralı Tamamlama)
+> **Hedef:** Kullanıcı günde max 3 görev tamamlayabilsin; ancak aynı anda tek görev seçilip tamamlandıktan sonra sıradaki seçilebilsin (odak prensibi).
 
-- [ ] **14.1** Backend — çoklu seçim desteği:
-  - `POST /api/dailytasks/{id}/select` — aynı kullanıcı aynı gün 3'e kadar görev seçebilmeli (limit kontrolü ekle)
-  - `GET /api/dailytasks/today` zaten 3 görev dönüyor, seçim sayısı kontrol edilmeli
-- [ ] **14.2** `TaskProvider`'ı güncelle:
-  - `activeTask` (tekil) → `activeTasks` (liste, max 3) haline getir
-  - Her görev bağımsız tamamlanabilmeli
-- [ ] **14.3** `HomeScreen`'i güncelle:
-  - 3 aktif görev için dikey liste veya swipeable kart grubu
-  - Her kartın kendi tamamlama butonu ve durumu
-  - Progress bar: "X/3 tamamlandı" mantığına geçir
-- [ ] **14.4** `TaskDiscoveryScreen`'i güncelle:
-  - Seçili görev sayısını göster ("2/3 seçildi")
-  - Seçili görevleri işaretli (checkmark) göster
-  - 3 seçim tamamlanınca otomatik Home'a yönlendir
-- [ ] **14.5** Migration: `DailyTask.IsSelected` boolean yerine `SelectionOrder` (int?) alanı düşünülebilir — tek seçim yerine sıralı seçim desteği
+- [x] **14.1** Backend — `POST /api/dailytasks/{id}/select`:
+  - Bugün tamamlanan görev sayısı ≥ 3 → `400 BadRequest` (yeni seçime izin verme)
+  - Mevcut `Active` seçim varsa `Skipped` yap (tek aktif görev prensibi korunuyor)
+  - Aynı görev zaten `Active` ise idempotent `200 OK`
+- [x] **14.2** Backend — `POST /api/dailytasks/from-suggestion`: Aynı limit kontrolü eklendi
+- [x] **14.3** `TaskProvider` güncellendi:
+  - `activeTask` tekil yapısı korundu
+  - Yeni getter: `int get completedTodayCount` — bugün tamamlanan görev sayısı
+  - Yeni getter: `bool get canSelectMore` — `completedTodayCount < 3`
+  - `completeTask`: Yerel `completedAt` timestamp'i de set ediyor
+- [x] **14.4** `HomeScreen` güncellendi:
+  - Görev tamamlandıktan sonra `canSelectMore == true` → "Sıradaki Görevi Seç" CTA + "X/3 tamamlandı" bilgisi
+  - `canSelectMore == false` → "Günlük Hedef Tamamlandı 🎉" ekranı (3/3)
+- [x] **14.5** `TaskDiscoveryScreen` güncellendi:
+  - Üst badge: "Bugün X/3 görev tamamlandı" (tamamlama sayacı)
+  - `canSelectMore == false` iken seçim girişiminde Snackbar uyarısı
+- [ ] **14.6** Migration: `DailyTask.IsSelected` boolean korunuyor; `SelectionOrder` eklenmedi (sequential model ile gereksiz)
 
 ---
 
 ### FAZ 15 — Journey: Renkli Kategorili Takvim
 > **Hedef:** Takvimde tamamlanan görevleri kategorilerine göre renkli dot'larla göster.
 
-- [ ] **15.1** `table_calendar` paketini `pubspec.yaml`'a ekle
-- [ ] **15.2** Her kategori için sabit renk kodu tanımla (helper/constants dosyasına):
+- [x] **15.1** `table_calendar` paketini `pubspec.yaml`'a ekle
+- [x] **15.2** Her kategori için sabit renk kodu tanımla (helper/constants dosyasına):
   - 🔴 Sağlık & Fitness
   - 🔵 Kariyer & Üretkenlik
   - 🟣 Zihinsel Gelişim
   - 🟠 Öğrenme & Beceri
   - 🟢 Mindfulness & Stres
   - 🟡 Finansal Okuryazarlık
-- [ ] **15.3** `JourneyScreen` takvim görünümünü `table_calendar` ile implemente et:
+- [x] **15.3** `JourneyScreen` takvim görünümünü `table_calendar` ile implemente et:
   - Tamamlanan her güne kategorisine göre renkli dot(lar) ekle
   - Birden fazla kategori aynı günde tamamlandıysa birden fazla dot
   - Takvim günlerine tıklandığında o günün görev listesi alt panelde açılsın
-- [ ] **15.4** `GET /api/dailytasks/history` response'una `category` alanı dahil edildiğini doğrula (zaten var, frontend'de kullanılmalı)
-- [ ] **15.5** Renk efsanesi (legend) widget'ı ekle — hangi renk hangi kategori
+- [x] **15.4** `GET /api/dailytasks/history` response'una `category` alanı dahil edildiğini doğrula (zaten var, frontend'de kullanılmalı)
+- [x] **15.5** Renk efsanesi (legend) widget'ı ekle — hangi renk hangi kategori
 
 ---
 

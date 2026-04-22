@@ -50,14 +50,25 @@ namespace GrowtTracker.API.Controllers
             if (task.UserId != userId)
                 return Forbid();
 
-            // Daha önce bu kullanıcı için aktif seçim varsa iptal et
+            // Bugün tamamlanan görev sayısı >= 3 ise yeni seçime izin verme
+            var today = DateTime.UtcNow.Date;
+            var completedToday = await _context.DailyTasks
+                .CountAsync(t => t.UserId == userId && t.IsCompleted && t.CompletedAt.HasValue && t.CompletedAt.Value.Date == today);
+
+            if (completedToday >= 3)
+                return BadRequest(new { message = "Günlük hedefe ulaştın! Bugün en fazla 3 görev tamamlayabilirsin.", completedToday });
+
+            // Aynı görev zaten aktif seçiliyse idempotent dön
+            var alreadyActive = await _context.TaskSelections
+                .AnyAsync(ts => ts.DailyTaskId == id && ts.UserId == userId && ts.Status == TaskSelectionStatus.Active);
+            if (alreadyActive)
+                return Ok(new { message = "Task already selected.", taskId = id });
+
+            // Daha önce bu kullanıcı için aktif seçim varsa Skipped yap
             var existingSelection = await _context.TaskSelections
                 .FirstOrDefaultAsync(ts => ts.UserId == userId && ts.Status == TaskSelectionStatus.Active);
-
             if (existingSelection != null)
-            {
                 existingSelection.Status = TaskSelectionStatus.Skipped;
-            }
 
             task.IsSelected = true;
 
@@ -195,7 +206,15 @@ namespace GrowtTracker.API.Controllers
         [HttpPost("from-suggestion")]
         public async Task<IActionResult> CreateAndSelectFromSuggestion([FromQuery] Guid userId, [FromBody] GrowthTracker.API.Dtos.TaskSuggestionDto suggestion)
         {
-            // Bugün zaten seçili aktif task varsa iptal et
+            // Bugün tamamlanan görev sayısı >= 3 ise yeni seçime izin verme
+            var today = DateTime.UtcNow.Date;
+            var completedToday = await _context.DailyTasks
+                .CountAsync(t => t.UserId == userId && t.IsCompleted && t.CompletedAt.HasValue && t.CompletedAt.Value.Date == today);
+
+            if (completedToday >= 3)
+                return BadRequest(new { message = "Günlük hedefe ulaştın! Bugün en fazla 3 görev tamamlayabilirsin.", completedToday });
+
+            // Daha önce aktif seçim varsa Skipped yap
             var existingSelection = await _context.TaskSelections
                 .FirstOrDefaultAsync(ts => ts.UserId == userId && ts.Status == TaskSelectionStatus.Active);
             if (existingSelection != null)

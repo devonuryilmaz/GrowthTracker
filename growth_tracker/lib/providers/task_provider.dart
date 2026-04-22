@@ -15,6 +15,19 @@ class TaskProvider extends ChangeNotifier {
   bool get hasActiveTask => _activeTask != null;
   bool get isTodayCompleted => _activeTask?.isCompleted ?? false;
 
+  /// Bugün tamamlanan görev sayısı (maksimum 3)
+  int get completedTodayCount {
+    final today = DateTime.now();
+    return _todayTasks.where((t) {
+      if (!t.isCompleted || t.completedAt == null) return false;
+      final d = t.completedAt!;
+      return d.year == today.year && d.month == today.month && d.day == today.day;
+    }).length;
+  }
+
+  /// Kullanıcı bugün daha fazla görev seçebilir mi?
+  bool get canSelectMore => completedTodayCount < 3;
+
   final ApiService _api = ApiService();
 
   Future<void> loadTodayTasks(String userId) async {
@@ -55,7 +68,7 @@ class TaskProvider extends ChangeNotifier {
   Future<bool> selectTask(int taskId, String userId) async {
     try {
       await _api.selectTask(taskId, userId);
-      // Seçilen görevi aktif olarak işaretle
+      // Seçilen görevi aktif olarak işaretle, önceki seçimi kaldır
       for (final task in _todayTasks) {
         task.isSelected = task.id == taskId;
       }
@@ -76,8 +89,15 @@ class TaskProvider extends ChangeNotifier {
       if (idx != -1) {
         _todayTasks[idx].isCompleted = true;
       }
+      final now = DateTime.now();
+      final activeIdx = _todayTasks.indexWhere((t) => t.id == taskId);
+      if (activeIdx != -1) {
+        _todayTasks[activeIdx].isCompleted = true;
+        _todayTasks[activeIdx].completedAt = now;
+      }
       if (_activeTask?.id == taskId) {
         _activeTask!.isCompleted = true;
+        _activeTask!.completedAt = now;
       }
       notifyListeners();
       return true;

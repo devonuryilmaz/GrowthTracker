@@ -7,7 +7,7 @@ class DailyTask {
   bool isSelected;
   bool isCompleted;
   final DateTime createdAt;
-  final DateTime? completedAt;
+  DateTime? completedAt;
 
   DailyTask({
     required this.id,

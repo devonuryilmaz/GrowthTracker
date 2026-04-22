@@ -20,6 +20,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _timer;
   int _remainingSeconds = 0;
 
+  static const _quotes = [
+    '"Her büyük yolculuk küçük bir adımla başlar."',
+    '"Bugün yaptıkların, yarınını şekillendirir."',
+    '"Süreklilik, mükemmellikten daha güçlüdür."',
+    '"Küçük adımlar, büyük sonuçlar doğurur."',
+    '"Gelişim bir hedef değil, bir yolculuktur."',
+    '"En iyi zaman şimdi. İkinci en iyi zaman da şimdi."',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -107,6 +116,8 @@ class _HomeScreenState extends State<HomeScreen> {
         child: CustomScrollView(
           slivers: [
             _buildAppBar(),
+            // Sabit üst bölüm: selamlama, stats, motivasyon, odak ipucu
+            SliverToBoxAdapter(child: _buildHeader()),
             SliverToBoxAdapter(
               child: Consumer<TaskProvider>(
                 builder: (context, provider, _) {
@@ -114,8 +125,19 @@ class _HomeScreenState extends State<HomeScreen> {
                     return const _LoadingSkeleton();
                   }
                   final task = provider.activeTask;
-                  if (task == null) return _buildNoTask();
-                  if (task.isCompleted) return _buildCompletedState(task);
+                  if (task == null) {
+                    if (provider.completedTodayCount > 0 && !provider.canSelectMore) {
+                      return const SizedBox.shrink();
+                    }
+                    if (provider.completedTodayCount > 0 && provider.canSelectMore) {
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                        child: _buildNextTaskCta(provider.completedTodayCount),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  }
+                  if (task.isCompleted) return _buildCompletedBody(task);
                   return _buildActiveSession(task);
                 },
               ),
@@ -585,101 +607,135 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildNoTask() {
+  /// Her zaman gösterilen üst bölüm: selamlama, tarih, stats, motivasyon, odak ipucu
+  Widget _buildHeader() {
     final user = context.read<UserProvider>().user;
     final hour = DateTime.now().hour;
-    final greeting =
-        hour < 12 ? 'Günaydın' : hour < 18 ? 'İyi günler' : 'İyi akşamlar';
+    final greeting = hour < 12
+        ? 'Günaydın'
+        : hour < 18
+            ? 'İyi günler'
+            : 'İyi akşamlar';
     final name = user?.name ?? '';
-    const quotes = [
-      '"Her büyük yolculuk küçük bir adımla başlar."',
-      '"Bugün yaptıkların, yarınını şekillendirir."',
-      '"Süreklilik, mükemmellikten daha güçlüdür."',
-      '"Küçük adımlar, büyük sonuçlar doğurur."',
-      '"Gelişim bir hedef değil, bir yolculuktur."',
-      '"En iyi zaman şimdi. İkinci en iyi zaman da şimdi."',
-    ];
-    final quote = quotes[DateTime.now().day % quotes.length];
+    final quote = _quotes[DateTime.now().day % _quotes.length];
     final focusArea = user?.focusArea ?? '';
 
     return Consumer<StatsProvider>(
       builder: (context, stats, _) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 8),
-              Text(
-                '$greeting${name.isNotEmpty ? ", $name!" : "!"} 👋',
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
-                  height: 1.2,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                DateFormat('d MMMM, EEEE').format(DateTime.now()),
-                style: const TextStyle(
-                    color: AppColors.textMuted, fontSize: 13),
-              ),
-              const SizedBox(height: 20),
-              _buildEmptyStatsRow(stats),
-              const SizedBox(height: 16),
-              _buildMotivationCard(quote),
-              const SizedBox(height: 16),
-              if (focusArea.isNotEmpty) ...[
-                _buildFocusHintCard(focusArea),
-                const SizedBox(height: 16),
-              ],
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: AppColors.gradientPrimary,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: ElevatedButton.icon(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                          builder: (_) => const TaskDiscoveryScreen()),
-                    ),
-                    icon: const Icon(Icons.explore_rounded,
-                        color: Colors.white, size: 18),
-                    label: const Text(
-                      'Görevleri Keşfet',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$greeting${name.isNotEmpty ? ", $name!" : "!"} 👋',
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      height: 1.2,
                     ),
                   ),
-                ),
+                  const SizedBox(height: 4),
+                  Text(
+                    DateFormat('d MMMM, EEEE').format(DateTime.now()),
+                    style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                  ),
+                ],
               ),
-              const SizedBox(height: 24),
-            ],
-          ),
+            ),
+            Consumer<TaskProvider>(
+              builder: (_, provider, __) {
+                if (!provider.canSelectMore) {
+                  return _buildAllDoneBody();
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildEmptyStatsRow(stats),
+                  const SizedBox(height: 16),
+                  _buildMotivationCard(quote),
+                  Consumer<TaskProvider>(
+                    builder: (_, provider, __) {
+                      if (provider.activeTask == null &&
+                          provider.completedTodayCount == 0) {
+                        return Column(
+                          children: [
+                            const SizedBox(height: 16),
+                            _buildDiscoverCta(),
+                          ],
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
+                  if (focusArea.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    // _buildFocusHintCard(focusArea),
+                  ],
+                ],
+              ),
+            ),
+          ],
         );
       },
     );
   }
 
+  /// Hiç görev seçilmemişken gösterilen CTA
+  Widget _buildDiscoverCta() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 0, 0, 4),
+      child: SizedBox(
+        width: double.infinity,
+        height: 52,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: AppColors.gradientPrimary,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: ElevatedButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const TaskDiscoveryScreen()),
+            ),
+            icon: const Icon(Icons.explore_rounded,
+                color: Colors.white, size: 18),
+            label: const Text(
+              'Görevleri Keşfet',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Eski _buildNoTask kaldırıldı — yerini _buildHeader + _buildDiscoverCta aldı
+
   Widget _buildEmptyStatsRow(StatsProvider stats) {
     return Row(
       children: [
-        _buildStatCard('🔥', '${stats.currentStreak}', 'Gün Serisi',
-            AppColors.warning),
+        _buildStatCard(
+            '🔥', '${stats.currentStreak}', 'Gün Serisi', AppColors.warning),
         const SizedBox(width: 10),
         _buildStatCard(
             '📅', '${stats.weeklyCompleted}', 'Bu Hafta', AppColors.primary),
@@ -690,8 +746,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildStatCard(
-      String icon, String value, String label, Color color) {
+  Widget _buildStatCard(String icon, String value, String label, Color color) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -743,7 +798,7 @@ class _HomeScreenState extends State<HomeScreen> {
               quote,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 13,
+                fontSize: 14,
                 height: 1.5,
                 fontStyle: FontStyle.italic,
               ),
@@ -754,104 +809,183 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildFocusHintCard(String focusArea) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.cardBorder),
-      ),
+  Widget _buildCompletedBody(DailyTask task) {
+    return Consumer<TaskProvider>(
+      builder: (_, provider, __) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+          child: Column(
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                      color: AppColors.success.withOpacity(0.4), width: 2),
+                ),
+                child: const Icon(Icons.check_rounded,
+                    color: AppColors.success, size: 36),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Görev Tamamlandı!',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '"${task.title}" görevi tamamlandı.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 20),
+              _buildDailyTrajectory(),
+              if (provider.canSelectMore) ...[
+                const SizedBox(height: 16),
+                _buildNextTaskCta(provider.completedTodayCount),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildNextTaskCta(int completedCount) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'BUGÜN HANGİ ALANDA ÇALIŞMAK İSTERSİN?',
-            style: TextStyle(
-              color: AppColors.textMuted,
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.2,
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.add_task_rounded,
+                      color: AppColors.primary, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$completedCount/3 görev tamamlandı 🎯',
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Günlük hedefe devam edebilirsin.',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: focusArea
-                .split(', ')
-                .where((s) => s.isNotEmpty)
-                .map((area) {
-              final color = AppTheme.categoryColor(area);
-              return Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: color.withOpacity(0.3)),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: AppColors.gradientPrimary,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: ElevatedButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (_) => const TaskDiscoveryScreen()),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(AppTheme.categoryIcon(area), color: color, size: 14),
-                    const SizedBox(width: 6),
-                    Text(
-                      area,
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+                icon: const Icon(Icons.explore_rounded,
+                    color: Colors.white, size: 18),
+                label: const Text(
+                  'Sıradaki Görevi Seç',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              );
-            }).toList(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCompletedState(DailyTask task) {
+  Widget _buildAllDoneBody() {
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
       child: Column(
         children: [
-          const SizedBox(height: 40),
           Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: AppColors.success.withOpacity(0.15),
+            width: 72,
+            height: 72,
+            decoration: const BoxDecoration(
+              gradient: AppColors.gradientPrimary,
               shape: BoxShape.circle,
-              border: Border.all(
-                  color: AppColors.success.withOpacity(0.4), width: 2),
             ),
-            child: const Icon(Icons.check_rounded,
-                color: AppColors.success, size: 40),
+            child: const Icon(Icons.emoji_events_rounded,
+                color: Colors.white, size: 36),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           const Text(
-            'Oturum Tamamlandi!',
+            'Günlük Hedef Tamamlandı! 🎉',
             style: TextStyle(
               color: AppColors.textPrimary,
-              fontSize: 22,
+              fontSize: 20,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            '"${task.title}" gorevi tamamlandi.',
+          const SizedBox(height: 6),
+          const Text(
+            'Bugün 3 görevini tamamladın.\nYarın yeni görevler seni bekliyor.',
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.textSecondary,
-              fontSize: 14,
-              height: 1.5,
+              fontSize: 13,
+              height: 1.6,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
           _buildDailyTrajectory(),
         ],
       ),

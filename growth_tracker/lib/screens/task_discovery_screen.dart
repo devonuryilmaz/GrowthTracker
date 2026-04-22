@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:growth_tracker/models/daily_task.dart';
 import 'package:growth_tracker/providers/task_provider.dart';
 import 'package:growth_tracker/providers/user_provider.dart';
-import 'package:growth_tracker/screens/main_shell.dart';
 import 'package:growth_tracker/screens/task_detail_screen.dart';
 import 'package:growth_tracker/theme/app_theme.dart';
 
@@ -39,18 +38,17 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
       final provider = context.read<TaskProvider>();
       await provider.loadTodayTasks(user.id);
       final tasks = provider.todayTasks;
-      if (tasks.isEmpty) {
-        final suggestions = await provider.loadSuggestions(user.id);
-        setState(() {
-          _dailyTasks = [];
-          _suggestions = suggestions;
-        });
-      } else {
-        setState(() {
-          _dailyTasks = tasks;
-          _suggestions = [];
-        });
+      final newTasks = tasks.toList();
+      List<TaskSuggestion> suggestions = [];
+      final remaining = 3 - newTasks.length;
+      if (remaining > 0) {
+        final all = await provider.loadSuggestions(user.id);
+        suggestions = all.take(remaining).toList();
       }
+      setState(() {
+        _dailyTasks = newTasks;
+        _suggestions = suggestions;
+      });
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -58,17 +56,25 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
     }
   }
 
-  Future<void> _selectTask(int taskId) async {
-    setState(() => _selectingId = taskId);
+  Future<void> _selectSuggestion(TaskSuggestion suggestion) async {
+    if (_selectingSuggestionTitle != null) return;
     final user = context.read<UserProvider>().user;
     if (user == null) return;
-    final ok = await context.read<TaskProvider>().selectTask(taskId, user.id);
+    setState(() => _selectingSuggestionTitle = suggestion.title);
+    final task = await context
+        .read<TaskProvider>()
+        .selectSuggestion(suggestion, user.id);
     if (!mounted) return;
-    setState(() => _selectingId = null);
-    if (ok) {
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const MainShell()),
-        (_) => false,
+    setState(() {
+      _selectingSuggestionTitle = null;
+      if (task != null) {
+        _suggestions.removeWhere((s) => s.title == suggestion.title);
+        _dailyTasks.add(task);
+      }
+    });
+    if (task != null) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => TaskDetailScreen(task: task)),
       );
     }
   }
@@ -120,8 +126,8 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
                     (ctx, i) => _buildDailyTaskCard(_dailyTasks[i]),
                     childCount: _dailyTasks.length,
                   ),
-                )
-              else
+                ),
+              if (_suggestions.isNotEmpty)
                 SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (ctx, i) => _buildSuggestionCard(_suggestions[i]),
@@ -160,34 +166,76 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
   }
 
   Widget _buildAiBadge() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.primary.withOpacity(0.25)),
-        ),
-        child: const Row(
-          children: [
-            Icon(Icons.auto_awesome_rounded,
-                color: AppColors.primary, size: 14),
-            SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'YAPAY ZEKA BUGUNUN EN VERIMLI BILISSEL YOLLARINI BELIRLEDI',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.8,
+    return Consumer<TaskProvider>(
+      builder: (_, provider, __) {
+        final completed = provider.completedTodayCount;
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (completed > 0)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                          color: AppColors.success.withOpacity(0.25)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.check_circle_rounded,
+                            color: AppColors.success, size: 14),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Bugün $completed/3 görev tamamlandı',
+                          style: const TextStyle(
+                            color: AppColors.success,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                  border:
+                      Border.all(color: AppColors.primary.withOpacity(0.25)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.auto_awesome_rounded,
+                        color: AppColors.primary, size: 14),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'YAPAY ZEKA BUGUNUN EN VERIMLI BILISSEL YOLLARINI BELIRLEDI',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -340,24 +388,7 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: isSelecting
-          ? null
-          : () async {
-              final user = context.read<UserProvider>().user;
-              if (user == null) return;
-              setState(() => _selectingSuggestionTitle = suggestion.title);
-              final task = await context
-                  .read<TaskProvider>()
-                  .selectSuggestion(suggestion, user.id);
-              if (!mounted) return;
-              setState(() => _selectingSuggestionTitle = null);
-              if (task != null) {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                      builder: (_) => TaskDetailScreen(task: task)),
-                );
-              }
-            },
+      onTap: isSelecting ? null : () => _selectSuggestion(suggestion),
       child: Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
       child: AnimatedOpacity(
@@ -444,22 +475,7 @@ class _TaskDiscoveryScreenState extends State<TaskDiscoveryScreen> {
                 ),
                 const Spacer(),
                 _selectButton(
-                    onPressed: isSelecting ? null : () async {
-                      final user = context.read<UserProvider>().user;
-                      if (user == null) return;
-                      setState(() => _selectingSuggestionTitle = suggestion.title);
-                      final task = await context
-                          .read<TaskProvider>()
-                          .selectSuggestion(suggestion, user.id);
-                      if (!mounted) return;
-                      setState(() => _selectingSuggestionTitle = null);
-                      if (task != null) {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                              builder: (_) => TaskDetailScreen(task: task)),
-                        );
-                      }
-                    },
+                    onPressed: isSelecting ? null : () => _selectSuggestion(suggestion),
                     isLoading: isSelecting),
               ],
             ),

@@ -45,6 +45,20 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   Future<void> _selectAndStart() async {
     final userId = context.read<UserProvider>().user?.id;
     if (userId == null) return;
+
+    // Günlük limit kontrolü
+    if (!context.read<TaskProvider>().canSelectMore) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Günlük hedefe ulaştın! Bugün en fazla 3 görev tamamlayabilirsin.'),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+      return;
+    }
+
     setState(() => _selecting = true);
     final ok = await context
         .read<TaskProvider>()
