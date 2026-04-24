@@ -22,44 +22,61 @@ public class AIGeneratorJob
     public async Task GenerateTasksAsync()
     {
         _logger.LogInformation("AI Task Generation started at: {Time}", DateTimeOffset.Now);
-        
-        var devices = await _dbContext.DeviceTokens.AsNoTracking()
-            .Include(d => d.User)
-            .ToListAsync();
 
-        var taskList = new List<DailyTask>();
-        
-        if (devices.Count == 0)
+        var users = await _dbContext.Users.AsNoTracking().ToListAsync();
+
+        if (users.Count == 0)
         {
-            _logger.LogWarning("No device tokens found. Skipping AI task generation.");
+            _logger.LogWarning("No users found. Skipping AI task generation.");
             return;
         }
 
-        foreach (var device in devices)
+        var today = DateTime.UtcNow.Date;
+        var taskList = new List<DailyTask>();
+
+        foreach (var user in users)
         {
-            _logger.LogInformation("Generating tasks for User: {UserId}, Device: {DeviceId}", device.UserId, device.Id);
-        
-            var taskSuggestions = await _openAIService.GenerateTaskSuggestionsAsync(device.User);
+            // İdempotent kontrol: bugün zaten görev üretilmişse atla
+            var alreadyGenerated = await _dbContext.DailyTasks
+                .AnyAsync(t => t.UserId == user.Id && t.CreatedAt.Date == today);
 
-            var task = new DailyTask
+            if (alreadyGenerated)
             {
-                Title = taskSuggestions.Length > 50 ? taskSuggestions.Substring(0, 50) : taskSuggestions,
-                Description = taskSuggestions
-            };
+                _logger.LogInformation("Tasks already generated for User {UserId} today. Skipping.", user.Id);
+                continue;
+            }
 
-            taskList.Add(task);
-       
-            if (!string.IsNullOrEmpty(taskSuggestions))
+            _logger.LogInformation("Generating tasks for User: {UserId}", user.Id);
+
+            var suggestions = await _openAIService.GenerateTaskSuggestionsAsync(user);
+
+            if (suggestions.Count == 0)
             {
-                _logger.LogInformation("Generated Task Suggestions: {Suggestions}", taskSuggestions);
+                _logger.LogWarning("No suggestions returned for User {UserId}.", user.Id);
+                continue;
             }
-            else
+
+            foreach (var suggestion in suggestions)
             {
-                _logger.LogWarning("No task suggestions were generated.");
+                taskList.Add(new DailyTask
+                {
+                    UserId = user.Id,
+                    Title = suggestion.Title,
+                    Description = suggestion.Description,
+                    Category = suggestion.Category,
+                    EstimatedMinutes = suggestion.EstimatedMinutes,
+                    CreatedAt = DateTime.UtcNow
+                });
             }
+
+            _logger.LogInformation("Generated {Count} tasks for User {UserId}.", suggestions.Count, user.Id);
         }
 
-        await _dbContext.DailyTasks.AddRangeAsync(taskList);
-        await _dbContext.SaveChangesAsync();
+        if (taskList.Count > 0)
+        {
+            await _dbContext.DailyTasks.AddRangeAsync(taskList);
+            await _dbContext.SaveChangesAsync();
+            _logger.LogInformation("Saved {Count} tasks to database.", taskList.Count);
+        }
     }
 }

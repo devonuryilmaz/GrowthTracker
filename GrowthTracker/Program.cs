@@ -38,6 +38,7 @@ builder.Services.AddScoped<ReminderJob>();
 builder.Services.AddScoped<AIGeneratorJob>();
 
 builder.Services.AddScoped<OpenAIService>();
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IFirebaseService, FirebaseService>();
 builder.Services.AddScoped<IDeviceTokenService, DeviceTokenService>();
 
@@ -77,17 +78,12 @@ using (var scope = app.Services.CreateScope())
         "GenerateAITasks",
         job => job.GenerateTasksAsync(),
         Cron.Daily);
-}
 
-// // Uygulama başlatıldıktan sonra recurring job'ı kur
-// using (var scope = app.Services.CreateScope())
-// {
-//     var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
-//     recurringJobManager.AddOrUpdate<ReminderJob>(
-//         "SendPendingReminders",
-//         job => job.SendPendingReminders(),
-//         Cron.Minutely);
-// }
+    recurringJobManager.AddOrUpdate<ReminderJob>(
+        "SendPendingReminders",
+        job => job.SendPendingReminders(),
+        Cron.Minutely);
+}
 
 app.Run();
 

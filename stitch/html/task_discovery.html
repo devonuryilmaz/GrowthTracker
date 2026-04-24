@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Manrope:wght@500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#00628c",
+                        "primary-container": "#9396ff",
+                        "on-background": "#302950",
+                        "error": "#b41340",
+                        "inverse-primary": "#8083ff",
+                        "error-container": "#f74b6d",
+                        "secondary-fixed": "#a4d8ff",
+                        "on-surface": "#302950",
+                        "on-primary-fixed-variant": "#0e009d",
+                        "on-tertiary-fixed": "#39000b",
+                        "on-primary": "#f4f1ff",
+                        "surface-bright": "#faf4ff",
+                        "on-secondary-fixed-variant": "#00567c",
+                        "on-error-container": "#510017",
+                        "tertiary-fixed-dim": "#ff7986",
+                        "background": "#faf4ff",
+                        "primary-fixed-dim": "#8387ff",
+                        "surface-container-highest": "#e1d8ff",
+                        "on-primary-fixed": "#000000",
+                        "surface-container-low": "#f4eeff",
+                        "on-secondary-fixed": "#003853",
+                        "surface-dim": "#d8ceff",
+                        "error-dim": "#a70138",
+                        "surface-tint": "#4647d3",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-container": "#004c6f",
+                        "on-tertiary": "#ffefef",
+                        "tertiary": "#b80438",
+                        "inverse-on-surface": "#a097c5",
+                        "surface": "#faf4ff",
+                        "secondary-dim": "#00557b",
+                        "on-error": "#ffefef",
+                        "tertiary-dim": "#a20030",
+                        "primary": "#4647d3",
+                        "inverse-surface": "#0f072e",
+                        "primary-dim": "#3939c7",
+                        "primary-fixed": "#9396ff",
+                        "on-tertiary-fixed-variant": "#780021",
+                        "surface-variant": "#e1d8ff",
+                        "on-tertiary-container": "#68001b",
+                        "tertiary-container": "#ff9099",
+                        "secondary-container": "#a4d8ff",
+                        "on-primary-container": "#0a0081",
+                        "secondary-fixed-dim": "#81ccff",
+                        "tertiary-fixed": "#ff9099",
+                        "surface-container": "#ece4ff",
+                        "outline": "#79719d",
+                        "on-secondary": "#e9f4ff",
+                        "surface-container-high": "#e6deff",
+                        "outline-variant": "#b0a7d6",
+                        "on-surface-variant": "#5e5680"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "3xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .primary-gradient {
+            background: linear-gradient(135deg, #4647d3 0%, #9396ff 100%);
+        }
+        .text-glow {
+            text-shadow: 0 0 20px rgba(70, 71, 211, 0.2);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#faf4ff]/70 dark:bg-[#302950]/70 backdrop-blur-xl">
+<div class="flex justify-between items-center px-6 py-4 w-full">
+<div class="flex items-center gap-2 scale-95 transition-transform duration-200 cursor-pointer">
+<span class="material-symbols-outlined text-[#6366F1] dark:text-[#9396ff] text-2xl">bubble_chart</span>
+<h1 class="text-xl font-bold text-[#302950] dark:text-[#faf4ff] font-manrope tracking-tight">Growth Tracker</h1>
+</div>
+<div class="flex gap-4">
+<button class="material-symbols-outlined text-[#302950]/60 dark:text-[#faf4ff]/60 hover:opacity-80 transition-opacity">notifications</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border-2 border-primary-container">
+<img class="w-full h-full object-cover" data-alt="professional portrait of a creative individual with soft studio lighting and a clean lavender background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDIfFK4hKSrdBi3XSRn-umgUwmzB41fi_lw59P8G8ww9dgjq2OwSLiP8eeSER6qnfgSACefMQYrXTA6QyEXP2KHUNP19koaIudEheAzaA_ZXiY4zNbJ18k3GmuJvRIcH3-wGVU00RVBHccbP_rO38OuYGysLVVRoncnWC3cwMby2BVhfMvzpMm1O-QmfgIBJVvnmMydzm5H5DGlqFQXszF1C4ol1hjI8R8Xu-1IRBHsSH5qRr-FGHdSv0OO6SfHtZsOjQLrZcQ2Jxo"/>
+</div>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-32 px-6 max-w-2xl mx-auto">
+<!-- Hero Section -->
+<section class="mb-12">
+<h2 class="font-headline text-on-surface text-[2.5rem] leading-tight font-extrabold tracking-tight mb-2">
+                Discovery <span class="text-primary italic">Awaits</span>
+</h2>
+<p class="text-on-surface-variant text-lg font-medium opacity-80">
+                Your AI has synthesized today's peak cognitive paths. Which one sparks focus?
+            </p>
+</section>
+<!-- Dynamic Task Cards -->
+<div class="space-y-8">
+<!-- Card 1: Creative Deep Dive -->
+<div class="group relative surface-container-low rounded-3xl overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+<div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none"></div>
+<div class="p-1">
+<div class="bg-surface-container-lowest rounded-[1.4rem] p-6 shadow-sm">
+<div class="flex justify-between items-start mb-6">
+<div class="p-3 bg-primary-container/20 rounded-2xl">
+<span class="material-symbols-outlined text-primary text-3xl" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+<span class="font-label font-bold text-xs uppercase tracking-widest text-primary bg-primary/5 px-3 py-1 rounded-full">High Flow State</span>
+</div>
+<h3 class="font-headline text-2xl font-bold text-on-surface mb-2">Neural Creative Sprints</h3>
+<p class="text-on-surface-variant leading-relaxed mb-6">
+                            Synthesize your weekly findings into a visual moodboard. High cognitive demand with rewarding visual feedback.
+                        </p>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-lg">schedule</span>
+<span class="font-label font-semibold text-sm">25 mins</span>
+</div>
+<button class="primary-gradient text-on-primary px-6 py-3 rounded-2xl font-headline font-bold text-sm shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all flex items-center gap-2">
+                                Select and Start
+                                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 2: Mental Maintenance -->
+<div class="group relative surface-container-low rounded-3xl overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+<div class="p-1">
+<div class="bg-surface-container-lowest rounded-[1.4rem] p-6 shadow-sm border-l-4 border-secondary">
+<div class="flex justify-between items-start mb-6">
+<div class="p-3 bg-secondary/10 rounded-2xl">
+<span class="material-symbols-outlined text-secondary text-3xl">psychology</span>
+</div>
+<span class="font-label font-bold text-xs uppercase tracking-widest text-secondary bg-secondary/5 px-3 py-1 rounded-full">Recalibration</span>
+</div>
+<h3 class="font-headline text-2xl font-bold text-on-surface mb-2">Cognitive Declutter</h3>
+<p class="text-on-surface-variant leading-relaxed mb-6">
+                            Briefly audit open loops and pending micro-decisions. Reclaim 15% of your daily processing power.
+                        </p>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-lg">schedule</span>
+<span class="font-label font-semibold text-sm">12 mins</span>
+</div>
+<button class="bg-secondary-container text-on-secondary-container px-6 py-3 rounded-2xl font-headline font-bold text-sm hover:bg-secondary-fixed transition-all active:scale-95 flex items-center gap-2">
+                                Select and Start
+                                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 3: Physical Integration -->
+<div class="group relative surface-container-low rounded-3xl overflow-hidden transition-all duration-300 hover:scale-[1.02]">
+<div class="p-1">
+<div class="bg-surface-container-lowest rounded-[1.4rem] p-6 shadow-sm border-l-4 border-tertiary">
+<div class="flex justify-between items-start mb-6">
+<div class="p-3 bg-tertiary/10 rounded-2xl">
+<span class="material-symbols-outlined text-tertiary text-3xl">self_improvement</span>
+</div>
+<span class="font-label font-bold text-xs uppercase tracking-widest text-tertiary bg-tertiary/5 px-3 py-1 rounded-full">Growth</span>
+</div>
+<h3 class="font-headline text-2xl font-bold text-on-surface mb-2">Kinetic Anchoring</h3>
+<p class="text-on-surface-variant leading-relaxed mb-6">
+                            Connect your top goal to a physical movement routine. Solidify mental breakthroughs through muscle memory.
+                        </p>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-lg">schedule</span>
+<span class="font-label font-semibold text-sm">20 mins</span>
+</div>
+<button class="bg-tertiary text-on-tertiary px-6 py-3 rounded-2xl font-headline font-bold text-sm hover:opacity-90 transition-all active:scale-95 flex items-center gap-2">
+                                Select and Start
+                                <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Asymmetrical Stats Widget -->
+<div class="mt-12 flex flex-col md:flex-row gap-4">
+<div class="flex-1 surface-container rounded-3xl p-6 flex items-center gap-4">
+<div class="w-16 h-16 rounded-full border-4 border-primary-container border-t-primary flex items-center justify-center">
+<span class="font-headline font-bold text-primary">64%</span>
+</div>
+<div>
+<p class="font-label text-xs uppercase tracking-widest text-primary font-bold">Focus Potential</p>
+<p class="text-on-surface-variant text-sm">Optimal window starts in 40m</p>
+</div>
+</div>
+<div class="w-full md:w-48 glass-card rounded-3xl p-6 flex flex-col justify-center items-center">
+<span class="material-symbols-outlined text-primary mb-1">bolt</span>
+<span class="font-headline font-bold text-2xl text-on-surface">3.2k</span>
+<span class="text-[10px] uppercase font-bold text-on-surface-variant tracking-tighter">Growth Neurons</span>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-6 pt-3 bg-[#f4eeff]/80 dark:bg-[#1a1625]/80 backdrop-blur-2xl z-50 rounded-t-[1.5rem] shadow-[0_-4px_20px_rgba(48,41,80,0.05)]">
+<div class="flex flex-col items-center justify-center text-[#302950]/50 dark:text-[#faf4ff]/50 px-5 py-2 hover:text-[#6366F1] transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined mb-1">home</span>
+<span class="font-inter text-[10px] font-semibold uppercase tracking-wider">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-[#ffffff] dark:bg-[#302950] text-[#6366F1] dark:text-[#9396ff] rounded-2xl px-5 py-2 shadow-sm transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">explore</span>
+<span class="font-inter text-[10px] font-semibold uppercase tracking-wider">Discovery</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#302950]/50 dark:text-[#faf4ff]/50 px-5 py-2 hover:text-[#6366F1] transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined mb-1">auto_graph</span>
+<span class="font-inter text-[10px] font-semibold uppercase tracking-wider">Journey</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#302950]/50 dark:text-[#faf4ff]/50 px-5 py-2 hover:text-[#6366F1] transition-all duration-300 cursor-pointer">
+<span class="material-symbols-outlined mb-1">settings</span>
+<span class="font-inter text-[10px] font-semibold uppercase tracking-wider">Settings</span>
+</div>
+</nav>
+</body></html>

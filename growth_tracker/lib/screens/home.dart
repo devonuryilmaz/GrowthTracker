@@ -1,45 +1,65 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:growth_tracker/services/notification_service.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-import '../models/reminder.dart';
-import '../services/api_service.dart';
-import 'add_reminder_screen.dart';
+import 'package:provider/provider.dart';
+import 'package:growth_tracker/models/daily_task.dart';
+import 'package:growth_tracker/providers/stats_provider.dart';
+import 'package:growth_tracker/providers/task_provider.dart';
+import 'package:growth_tracker/providers/user_provider.dart';
+import 'package:growth_tracker/screens/task_discovery_screen.dart';
+import 'package:growth_tracker/theme/app_theme.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final ApiService apiService = ApiService();
-  List<Reminder> reminders = [];
-  bool isLoading = false;
   Timer? _timer;
+  int _remainingSeconds = 0;
 
-  String _userName = '';
-  String _userJob = '';
-  int _userAge = 0;
+  static const _quotes = [
+    '"Her büyük yolculuk küçük bir adımla başlar."',
+    '"Bugün yaptıkların, yarınını şekillendirir."',
+    '"Süreklilik, mükemmellikten daha güçlüdür."',
+    '"Küçük adımlar, büyük sonuçlar doğurur."',
+    '"Gelişim bir hedef değil, bir yolculuktur."',
+    '"En iyi zaman şimdi. İkinci en iyi zaman da şimdi."',
+  ];
 
   @override
   void initState() {
     super.initState();
-    _loadUserInfo();
-    fetchReminders();
-
-    _timer = Timer.periodic(Duration(seconds: 1), (_) => checkReminders());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
-  Future<void> _loadUserInfo() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _userName = prefs.getString('user_name') ?? '';
-      _userJob = prefs.getString('user_job') ?? '';
-      _userAge = prefs.getInt('user_age') ?? 0;
-    });
+  Future<void> _load() async {
+    final user = context.read<UserProvider>().user;
+    if (user == null) return;
+    await Future.wait([
+      context.read<TaskProvider>().loadTodayTasks(user.id),
+      context.read<StatsProvider>().loadStats(user.id),
+      context.read<StatsProvider>().loadHistory(user.id),
+    ]);
+    _syncTimer();
+  }
+
+  void _syncTimer() {
+    final task = context.read<TaskProvider>().activeTask;
+    _timer?.cancel();
+    if (task != null && !task.isCompleted) {
+      setState(() {
+        _remainingSeconds = task.estimatedMinutes * 60;
+      });
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (!mounted) return;
+        setState(() {
+          if (_remainingSeconds > 0) _remainingSeconds--;
+        });
+      });
+    }
   }
 
   @override
@@ -48,135 +68,951 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  Future<void> fetchReminders() async {
-    setState(() {
-      isLoading = true;
-    });
+  String get _timerDisplay {
+    final m = _remainingSeconds ~/ 60;
+    final s = _remainingSeconds % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
 
-    try {
-      final data = await apiService.fetchReminders();
-      setState(() {
-        reminders = data;
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-      // Hata durumunda kullanıcıya bilgi verin
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Hatırlatıcılar yüklenemedi: $e')),
-      );
+  Future<void> _complete(DailyTask task) async {
+    final user = context.read<UserProvider>().user;
+    if (user == null) return;
+    _timer?.cancel();
+    await context.read<TaskProvider>().completeTask(task.id, user.id);
+  }
+
+  String _intensityLabel(String category) {
+    switch (category.toLowerCase()) {
+      case 'kariyer':
+      case 'zihinsel':
+        return 'YUKSEK YOGUNLUK';
+      case 'mindfulness':
+        return 'DUSUK YOGUNLUK';
+      default:
+        return 'ORTA YOGUNLUK';
     }
   }
 
-  bool _snackbarShowing =
-      false; // Aynı anda birden fazla snackbar göstermemek için
-
-  void checkReminders() {
-    final now = DateTime.now();
-    for (var r in reminders) {
-      if (!r.isCompleted &&
-          r.reminderDate.isBefore(now.add(Duration(seconds: 1)))) {
-        if (!_snackbarShowing) {
-          _snackbarShowing = true;
-
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Reminder: ${r.title}'),
-                duration: const Duration(seconds: 3),
-                behavior: SnackBarBehavior
-                    .floating, // hafifçe yukarıdan açılıyor gibi
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                action: SnackBarAction(
-                  label: 'OK',
-                  onPressed: () async {
-                    await fetchReminders(); // isteğe bağlı: listeyi backend’den çek
-                  },
-                ),
-              ),
-            );
-            _snackbarShowing = false;
-          });
-        }
-
-        r.isCompleted = true; // tekrar göstermesin
-      }
+  Color _intensityColor(String category) {
+    switch (category.toLowerCase()) {
+      case 'kariyer':
+      case 'zihinsel':
+        return AppColors.warning;
+      case 'mindfulness':
+        return AppColors.success;
+      default:
+        return AppColors.primary;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Growth Tracker'),
-      actions: [
-        IconButton(icon: const Icon(Icons.logout), onPressed: () async {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.clear();
-          if (mounted) {
-            Navigator.of(context).pushReplacementNamed('/login');
-          }
-        })
-      ],),
+      backgroundColor: AppColors.background,
       body: RefreshIndicator(
-        onRefresh: fetchReminders,
-        child: isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : reminders.isEmpty
-                ? ListView(
-                    children: const [
-                      Center(child: Text('No upcoming reminders'))
-                    ],
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(8),
-                    itemCount: reminders.length,
-                    itemBuilder: (context, index) {
-                      final r = reminders[index];
-                      final isPast = r.reminderDate.isBefore(DateTime.now());
-                      return Card(
-                        elevation: 2,
-                        margin: const EdgeInsets.symmetric(vertical: 4),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
-                          leading: Icon(
-                              isPast ? Icons.warning : Icons.notifications,
-                              color: isPast ? Colors.red : Colors.blue),
-                          title: Text(r.title,
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text(
-                              '${r.description}\t - ${DateFormat('dd MMM, HH:mm').format(r.reminderDate)}'),
-                          trailing: r.isCompleted
-                              ? const Icon(Icons.check_circle,
-                                  color: Colors.green)
-                              : null,
-                        ),
+        onRefresh: _load,
+        color: AppColors.primary,
+        backgroundColor: AppColors.surface,
+        child: CustomScrollView(
+          slivers: [
+            _buildAppBar(),
+            // Sabit üst bölüm: selamlama, stats, motivasyon, odak ipucu
+            SliverToBoxAdapter(child: _buildHeader()),
+            SliverToBoxAdapter(
+              child: Consumer<TaskProvider>(
+                builder: (context, provider, _) {
+                  if (provider.isLoading) {
+                    return const _LoadingSkeleton();
+                  }
+                  final task = provider.activeTask;
+                  if (task == null) {
+                    if (provider.completedTodayCount > 0 && !provider.canSelectMore) {
+                      return const SizedBox.shrink();
+                    }
+                    if (provider.completedTodayCount > 0 && provider.canSelectMore) {
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                        child: _buildNextTaskCta(provider.completedTodayCount),
                       );
+                    }
+                    return const SizedBox.shrink();
+                  }
+                  if (task.isCompleted) return _buildCompletedBody(task);
+                  return _buildActiveSession(task);
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  SliverAppBar _buildAppBar() {
+    return SliverAppBar(
+      backgroundColor: AppColors.background,
+      pinned: true,
+      elevation: 0,
+      title: Row(
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              gradient: AppColors.gradientPrimary,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.psychology_rounded,
+                color: Colors.white, size: 16),
+          ),
+          const SizedBox(width: 8),
+          const Text(
+            'Growth Tracker',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        Consumer<UserProvider>(
+          builder: (_, up, __) => Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: CircleAvatar(
+              radius: 16,
+              backgroundColor: AppColors.primary.withOpacity(0.2),
+              child: Text(
+                up.user?.name.isNotEmpty == true
+                    ? up.user!.name[0].toUpperCase()
+                    : 'U',
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActiveSession(DailyTask task) {
+    final categoryColor = AppTheme.categoryColor(task.category);
+    final intensityColor = _intensityColor(task.category);
+    final estTime =
+        DateTime.now().add(Duration(minutes: _remainingSeconds ~/ 60 + 1));
+
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Active session badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.success.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.success.withOpacity(0.3)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: const BoxDecoration(
+                    color: AppColors.success,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Text(
+                  'AKTIF OTURUM',
+                  style: TextStyle(
+                    color: AppColors.success,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Main session card
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: AppColors.gradientCard,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.cardBorder),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: intensityColor.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border:
+                            Border.all(color: intensityColor.withOpacity(0.4)),
+                      ),
+                      child: Text(
+                        _intensityLabel(task.category),
+                        style: TextStyle(
+                          color: intensityColor,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: categoryColor.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        AppTheme.categoryIcon(task.category),
+                        color: categoryColor,
+                        size: 18,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  task.title,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    height: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  task.description,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Timer
+                Center(
+                  child: Text(
+                    _timerDisplay,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 52,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -2,
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                ),
+                Center(
+                  child: Text(
+                    'TAHMINI BITIS  ${DateFormat('HH:mm').format(estTime)}',
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 10,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Mark as Done button
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: AppColors.gradientPrimary,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: () => _complete(task),
+                      icon: const Icon(Icons.check_circle_rounded,
+                          color: Colors.white, size: 18),
+                      label: const Text(
+                        'Tamamlandi Olarak Isaretle',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          // Daily Trajectory
+          _buildDailyTrajectory(),
+          const SizedBox(height: 16),
+          // Focus Peak
+          _buildFocusPeak(task),
+          const SizedBox(height: 16),
+          // Next session hint
+          _buildNextHint(),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDailyTrajectory() {
+    return Consumer<TaskProvider>(
+      builder: (_, provider, __) {
+        final tasks = provider.todayTasks;
+        final completed = tasks.where((t) => t.isCompleted).length;
+        final total = tasks.length;
+        final pct = total > 0 ? (completed / total) : 0.0;
+        final invested = tasks
+            .where((t) => t.isCompleted)
+            .fold(0, (s, t) => s + t.estimatedMinutes);
+        final remaining = tasks
+            .where((t) => !t.isCompleted)
+            .fold(0, (s, t) => s + t.estimatedMinutes);
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.cardBorder),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Text(
+                    'Gunluk Ilerleme',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '%${(pct * 100).round()} Buyume',
+                    style: const TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: pct,
+                  minHeight: 6,
+                  backgroundColor: AppColors.surfaceElevated,
+                  valueColor:
+                      const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  _trajectoryChip(
+                    label: 'HARCANAN SURE',
+                    value: '${(invested / 60).toStringAsFixed(1)} sa',
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: 12),
+                  _trajectoryChip(
+                    label: 'KALAN DINLENME',
+                    value: '${(remaining / 60).toStringAsFixed(1)} sa',
+                    color: AppColors.textMuted,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _trajectoryChip(
+      {required String label, required String value, required Color color}) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 9,
+                letterSpacing: 0.8,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFocusPeak(DailyTask task) {
+    final pct = (task.estimatedMinutes > 0)
+        ? ((_remainingSeconds > 0)
+            ? (1 - _remainingSeconds / (task.estimatedMinutes * 60))
+            : 1.0)
+        : 0.0;
+    final cogPct = (pct * 84).round().clamp(0, 100);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.success.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.lightbulb_rounded,
+                color: AppColors.success, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Odak Zirvesi',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Bilissel kapasiten su anda %$cogPct seviyesinde.',
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNextHint() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.skip_next_rounded,
+                color: AppColors.primary, size: 20),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Siradaki: Nefes',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  '15 dakika sonra bir dinlenme oturumu planlandi.',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Her zaman gösterilen üst bölüm: selamlama, tarih, stats, motivasyon, odak ipucu
+  Widget _buildHeader() {
+    final user = context.read<UserProvider>().user;
+    final hour = DateTime.now().hour;
+    final greeting = hour < 12
+        ? 'Günaydın'
+        : hour < 18
+            ? 'İyi günler'
+            : 'İyi akşamlar';
+    final name = user?.name ?? '';
+    final quote = _quotes[DateTime.now().day % _quotes.length];
+    final focusArea = user?.focusArea ?? '';
+
+    return Consumer<StatsProvider>(
+      builder: (context, stats, _) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$greeting${name.isNotEmpty ? ", $name!" : "!"} 👋',
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      height: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    DateFormat('d MMMM, EEEE').format(DateTime.now()),
+                    style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+            Consumer<TaskProvider>(
+              builder: (_, provider, __) {
+                if (!provider.canSelectMore) {
+                  return _buildAllDoneBody();
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildEmptyStatsRow(stats),
+                  const SizedBox(height: 16),
+                  _buildMotivationCard(quote),
+                  Consumer<TaskProvider>(
+                    builder: (_, provider, __) {
+                      if (provider.activeTask == null &&
+                          provider.completedTodayCount == 0) {
+                        return Column(
+                          children: [
+                            const SizedBox(height: 16),
+                            _buildDiscoverCta(),
+                          ],
+                        );
+                      }
+                      return const SizedBox.shrink();
                     },
                   ),
+                  if (focusArea.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    // _buildFocusHintCard(focusArea),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Hiç görev seçilmemişken gösterilen CTA
+  Widget _buildDiscoverCta() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 0, 0, 4),
+      child: SizedBox(
+        width: double.infinity,
+        height: 52,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: AppColors.gradientPrimary,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: ElevatedButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const TaskDiscoveryScreen()),
+            ),
+            icon: const Icon(Icons.explore_rounded,
+                color: Colors.white, size: 18),
+            label: const Text(
+              'Görevleri Keşfet',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+          ),
+        ),
       ),
-      floatingActionButton: FloatingActionButton(
-          onPressed: () async {
-            await Navigator.push(context,
-                MaterialPageRoute(builder: (context) => AddReminderScreen()));
-            fetchReminders();
-          },
-          child: const Icon(Icons.add)),
-      // ElevatedButton(
-      //   onPressed: () {
-      //     ScaffoldMessenger.of(context).showSnackBar(
-      //       SnackBar(content: Text('Test Reminder!')),
-      //     );
-      //   },
-      //   child: Text('Show Snackbar'),
-      // ),
+    );
+  }
+
+  // Eski _buildNoTask kaldırıldı — yerini _buildHeader + _buildDiscoverCta aldı
+
+  Widget _buildEmptyStatsRow(StatsProvider stats) {
+    return Row(
+      children: [
+        _buildStatCard(
+            '🔥', '${stats.currentStreak}', 'Gün Serisi', AppColors.warning),
+        const SizedBox(width: 10),
+        _buildStatCard(
+            '📅', '${stats.weeklyCompleted}', 'Bu Hafta', AppColors.primary),
+        const SizedBox(width: 10),
+        _buildStatCard(
+            '✅', '${stats.totalCompleted}', 'Toplam', AppColors.success),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(String icon, String value, String label, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.cardBorder),
+        ),
+        child: Column(
+          children: [
+            Text(icon, style: const TextStyle(fontSize: 18)),
+            const SizedBox(height: 6),
+            Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMotivationCard(String quote) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: AppColors.gradientPrimary,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          const Text('💡', style: TextStyle(fontSize: 24)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              quote,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                height: 1.5,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompletedBody(DailyTask task) {
+    return Consumer<TaskProvider>(
+      builder: (_, provider, __) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+          child: Column(
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: AppColors.success.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                      color: AppColors.success.withOpacity(0.4), width: 2),
+                ),
+                child: const Icon(Icons.check_rounded,
+                    color: AppColors.success, size: 36),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Görev Tamamlandı!',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '"${task.title}" görevi tamamlandı.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 20),
+              _buildDailyTrajectory(),
+              if (provider.canSelectMore) ...[
+                const SizedBox(height: 16),
+                _buildNextTaskCta(provider.completedTodayCount),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildNextTaskCta(int completedCount) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.add_task_rounded,
+                      color: AppColors.primary, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$completedCount/3 görev tamamlandı 🎯',
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Günlük hedefe devam edebilirsin.',
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: AppColors.gradientPrimary,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: ElevatedButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (_) => const TaskDiscoveryScreen()),
+                ),
+                icon: const Icon(Icons.explore_rounded,
+                    color: Colors.white, size: 18),
+                label: const Text(
+                  'Sıradaki Görevi Seç',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAllDoneBody() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+      child: Column(
+        children: [
+          Container(
+            width: 72,
+            height: 72,
+            decoration: const BoxDecoration(
+              gradient: AppColors.gradientPrimary,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.emoji_events_rounded,
+                color: Colors.white, size: 36),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Günlük Hedef Tamamlandı! 🎉',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Bugün 3 görevini tamamladın.\nYarın yeni görevler seni bekliyor.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+              height: 1.6,
+            ),
+          ),
+          const SizedBox(height: 20),
+          _buildDailyTrajectory(),
+        ],
+      ),
+    );
+  }
+}
+
+class _LoadingSkeleton extends StatelessWidget {
+  const _LoadingSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: List.generate(
+          3,
+          (i) => Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            height: i == 0 ? 240 : 80,
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
