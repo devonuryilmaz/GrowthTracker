@@ -39,14 +39,14 @@ class ApiService {
     }
   }
 
-  Future<void> sendTokenToServer(String token, String platform) async {
+  Future<void> sendTokenToServer(String token, String platform, {String? userId}) async {
     final url = Uri.parse('$baseUrl/deviceToken');
     
     // Cihaz ID'sini helper'dan al
     String deviceId = await getDeviceId();
     
     final body = jsonEncode({
-      'userId': null,
+      'userId': userId,
       'deviceId': deviceId,
       'token': token,
       'platform': platform,

@@ -109,13 +109,16 @@ class _MyAppState extends State<MyApp> {
       _handleMessageClick(initialMessage);
     }
 
+    final prefs = await SharedPreferences.getInstance();
+    final String? userId = prefs.getString('userId');
+
     String? fcmToken = await messaging.getToken();
     setState(() {
       token = fcmToken;
     });
     print('FCM Token: $fcmToken');
     if (fcmToken != null) {
-      await apiService.sendTokenToServer(fcmToken, platform );
+      await apiService.sendTokenToServer(fcmToken, platform, userId: userId);
     }
 
     FirebaseMessaging.instance.onTokenRefresh.listen((event) async {
@@ -123,7 +126,9 @@ class _MyAppState extends State<MyApp> {
       setState(() {
         token = event;
       });
-      await apiService.sendTokenToServer(event, platform);
+      final refreshPrefs = await SharedPreferences.getInstance();
+      final String? refreshUserId = refreshPrefs.getString('userId');
+      await apiService.sendTokenToServer(event, platform, userId: refreshUserId);
     });
   }
 

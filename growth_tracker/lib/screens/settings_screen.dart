@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:growth_tracker/providers/user_provider.dart';
 import 'package:growth_tracker/screens/login_screen.dart';
 import 'package:growth_tracker/theme/app_theme.dart';
@@ -25,6 +26,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final user = context.read<UserProvider>().user;
     _nameController = TextEditingController(text: user?.name ?? '');
     _jobController = TextEditingController(text: user?.job ?? '');
+    _loadPrefs();
+  }
+
+  Future<void> _loadPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _morningReminder = prefs.getBool('setting_morningReminder') ?? true;
+      _clarityReminder = prefs.getBool('setting_clarityReminder') ?? false;
+      _adaptiveDarkMode = prefs.getBool('setting_adaptiveDarkMode') ?? true;
+      final hour = prefs.getInt('setting_windDownHour') ?? 21;
+      final minute = prefs.getInt('setting_windDownMinute') ?? 45;
+      _windDownTime = TimeOfDay(hour: hour, minute: minute);
+    });
+  }
+
+  Future<void> _savePrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('setting_morningReminder', _morningReminder);
+    await prefs.setBool('setting_clarityReminder', _clarityReminder);
+    await prefs.setBool('setting_adaptiveDarkMode', _adaptiveDarkMode);
+    await prefs.setInt('setting_windDownHour', _windDownTime.hour);
+    await prefs.setInt('setting_windDownMinute', _windDownTime.minute);
   }
 
   @override
@@ -351,7 +375,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: 'Morning',
             subtitle: 'Daily morning focus session',
             value: _morningReminder,
-            onChanged: (v) => setState(() => _morningReminder = v),
+            onChanged: (v) { setState(() => _morningReminder = v); _savePrefs(); },
           ),
           const Divider(color: AppColors.cardBorder, height: 1, indent: 56),
           _switchTile(
@@ -360,7 +384,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             title: 'Clarity',
             subtitle: 'Midday mindfulness check-in',
             value: _clarityReminder,
-            onChanged: (v) => setState(() => _clarityReminder = v),
+            onChanged: (v) { setState(() => _clarityReminder = v); _savePrefs(); },
           ),
           const Divider(color: AppColors.cardBorder, height: 1, indent: 56),
           ListTile(
@@ -394,7 +418,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: child!,
                   ),
                 );
-                if (time != null) setState(() => _windDownTime = time);
+                if (time != null) {
+                  setState(() => _windDownTime = time);
+                  _savePrefs();
+                }
               },
               child: Container(
                 padding:
@@ -433,7 +460,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             iconColor: AppColors.primary,
             title: 'Adaptive Dark Mode',
             value: _adaptiveDarkMode,
-            onChanged: (v) => setState(() => _adaptiveDarkMode = v),
+            onChanged: (v) { setState(() => _adaptiveDarkMode = v); _savePrefs(); },
           ),
           const Divider(color: AppColors.cardBorder, height: 1, indent: 56),
           _settingsRow(

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -19,6 +20,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   Timer? _timer;
   int _remainingSeconds = 0;
+  late ConfettiController _confettiController;
 
   static const _quotes = [
     '"Her büyük yolculuk küçük bir adımla başlar."',
@@ -32,6 +34,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _confettiController = ConfettiController(
+      duration: const Duration(seconds: 3),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());
   }
 
@@ -65,6 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _confettiController.dispose();
     super.dispose();
   }
 
@@ -79,6 +85,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (user == null) return;
     _timer?.cancel();
     await context.read<TaskProvider>().completeTask(task.id, user.id);
+    if (mounted) _confettiController.play();
   }
 
   String _intensityLabel(String category) {
@@ -107,44 +114,65 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: RefreshIndicator(
-        onRefresh: _load,
-        color: AppColors.primary,
-        backgroundColor: AppColors.surface,
-        child: CustomScrollView(
-          slivers: [
-            _buildAppBar(),
-            // Sabit üst bölüm: selamlama, stats, motivasyon, odak ipucu
-            SliverToBoxAdapter(child: _buildHeader()),
-            SliverToBoxAdapter(
-              child: Consumer<TaskProvider>(
-                builder: (context, provider, _) {
-                  if (provider.isLoading) {
-                    return const _LoadingSkeleton();
-                  }
-                  final task = provider.activeTask;
-                  if (task == null) {
-                    if (provider.completedTodayCount > 0 && !provider.canSelectMore) {
-                      return const SizedBox.shrink();
-                    }
-                    if (provider.completedTodayCount > 0 && provider.canSelectMore) {
-                      return Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                        child: _buildNextTaskCta(provider.completedTodayCount),
-                      );
-                    }
-                    return const SizedBox.shrink();
-                  }
-                  if (task.isCompleted) return _buildCompletedBody(task);
-                  return _buildActiveSession(task);
-                },
-              ),
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: AppColors.background,
+          body: RefreshIndicator(
+            onRefresh: _load,
+            color: AppColors.primary,
+            backgroundColor: AppColors.surface,
+            child: CustomScrollView(
+              slivers: [
+                _buildAppBar(),
+                // Sabit üst bölüm: selamlama, stats, motivasyon, odak ipucu
+                SliverToBoxAdapter(child: _buildHeader()),
+                SliverToBoxAdapter(
+                  child: Consumer<TaskProvider>(
+                    builder: (context, provider, _) {
+                      if (provider.isLoading) {
+                        return const _LoadingSkeleton();
+                      }
+                      final task = provider.activeTask;
+                      if (task == null) {
+                        if (provider.completedTodayCount > 0 && !provider.canSelectMore) {
+                          return const SizedBox.shrink();
+                        }
+                        if (provider.completedTodayCount > 0 && provider.canSelectMore) {
+                          return Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                            child: _buildNextTaskCta(provider.completedTodayCount),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      }
+                      if (task.isCompleted) return _buildCompletedBody(task);
+                      return _buildActiveSession(task);
+                    },
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+        Align(
+          alignment: Alignment.topCenter,
+          child: ConfettiWidget(
+            confettiController: _confettiController,
+            blastDirectionality: BlastDirectionality.explosive,
+            shouldLoop: false,
+            colors: const [
+              AppColors.primary,
+              AppColors.success,
+              AppColors.warning,
+              Colors.white,
+            ],
+            numberOfParticles: 30,
+            emissionFrequency: 0.05,
+            gravity: 0.3,
+          ),
+        ),
+      ],
     );
   }
 

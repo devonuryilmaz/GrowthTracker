@@ -39,6 +39,7 @@ dependencies:
   provider: ^6.1.2
   google_fonts: ^6.2.1
   table_calendar: ^3.1.2
+  confetti: ^0.7.0
 
 
   # The following adds the Cupertino Icons font to your application.
