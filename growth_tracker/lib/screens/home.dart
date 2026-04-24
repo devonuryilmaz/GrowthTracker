@@ -168,7 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Colors.white,
             ],
             numberOfParticles: 30,
-            emissionFrequency: 0.05,
+            emissionFrequency: 0.05, 
             gravity: 0.3,
           ),
         ),
