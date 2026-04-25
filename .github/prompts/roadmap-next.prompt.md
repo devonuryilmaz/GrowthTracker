@@ -1,5 +1,5 @@
 ---
-mode: agent
+agent: agent
 description: ROADMAP.md dosyasını inceler, tamamlanmamış maddeleri analiz eder ve bağımlılıklara göre en uygun sonraki geliştirme adımını önerir.
 ---
 

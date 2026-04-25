@@ -1,0 +1,7 @@
+{
+  "chat.promptFilesLocations": {
+    ".github/prompts": true,
+    ".github/prompts/init": true,
+    ".github/prompts/skills": true
+  }
+}
