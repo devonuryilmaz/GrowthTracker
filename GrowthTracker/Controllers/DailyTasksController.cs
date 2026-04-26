@@ -1,8 +1,6 @@
-using GrowthTracker.API.Data;
-using GrowthTracker.API.Entity;
+using GrowthTracker.API.Dtos;
 using GrowthTracker.API.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace GrowtTracker.API.Controllers
 {
@@ -10,15 +8,13 @@ namespace GrowtTracker.API.Controllers
     [ApiController]
     public class DailyTasksController : ControllerBase
     {
-        private readonly AppDbContext _context;
+        private readonly IDailyTaskService _dailyTaskService;
         private readonly ILogger<DailyTasksController> _logger;
-        private readonly IFirebaseService _firebaseService;
 
-        public DailyTasksController(AppDbContext context, ILogger<DailyTasksController> logger, IFirebaseService firebaseService)
+        public DailyTasksController(IDailyTaskService dailyTaskService, ILogger<DailyTasksController> logger)
         {
-            _context = context;
+            _dailyTaskService = dailyTaskService;
             _logger = logger;
-            _firebaseService = firebaseService;
         }
 
         /// <summary>
@@ -27,13 +23,7 @@ namespace GrowtTracker.API.Controllers
         [HttpGet("today")]
         public async Task<IActionResult> GetTodaysTasks([FromQuery] Guid userId)
         {
-            var today = DateTime.UtcNow.Date;
-            var tasks = await _context.DailyTasks
-                .Where(t => t.UserId == userId && t.CreatedAt.Date == today)
-                .OrderBy(t => t.CreatedAt)
-                .AsNoTracking()
-                .ToListAsync();
-
+            var tasks = await _dailyTaskService.GetTodaysTasksAsync(userId);
             return Ok(tasks);
         }
 
@@ -43,82 +33,20 @@ namespace GrowtTracker.API.Controllers
         [HttpPost("{id:int}/select")]
         public async Task<IActionResult> SelectTask(int id, [FromQuery] Guid userId)
         {
-            var task = await _context.DailyTasks.FindAsync(id);
-            if (task == null)
-                return NotFound();
+            var result = await _dailyTaskService.SelectTaskAsync(id, userId);
 
-            if (task.UserId != userId)
-                return Forbid();
-
-            // Bugün tamamlanan görev sayısı >= 3 ise yeni seçime izin verme
-            var today = DateTime.UtcNow.Date;
-            var completedToday = await _context.DailyTasks
-                .CountAsync(t => t.UserId == userId && t.IsCompleted && t.CompletedAt.HasValue && t.CompletedAt.Value.Date == today);
-
-            if (completedToday >= 3)
-                return BadRequest(new { message = "Günlük hedefe ulaştın! Bugün en fazla 3 görev tamamlayabilirsin.", completedToday });
-
-            // Aynı görev zaten aktif seçiliyse idempotent dön
-            var alreadyActive = await _context.TaskSelections
-                .AnyAsync(ts => ts.DailyTaskId == id && ts.UserId == userId && ts.Status == TaskSelectionStatus.Active);
-            if (alreadyActive)
-                return Ok(new { message = "Task already selected.", taskId = id });
-
-            // Daha önce bu kullanıcı için aktif seçim varsa Skipped yap
-            var existingSelection = await _context.TaskSelections
-                .FirstOrDefaultAsync(ts => ts.UserId == userId && ts.Status == TaskSelectionStatus.Active);
-            if (existingSelection != null)
-                existingSelection.Status = TaskSelectionStatus.Skipped;
-
-            task.IsSelected = true;
-
-            var selection = new TaskSelection
+            if (!result.IsSuccess)
             {
-                UserId = userId,
-                DailyTaskId = id,
-                SelectedAt = DateTime.UtcNow,
-                Status = TaskSelectionStatus.Active
-            };
-
-            await _context.TaskSelections.AddAsync(selection);
-
-            // Görev için hatırlatma: estimatedMinutes sonra bildirim gönder
-            var reminderTime = DateTime.UtcNow.AddMinutes(task.EstimatedMinutes > 0 ? task.EstimatedMinutes : 30);
-            var reminder = new Reminder
-            {
-                UserId = userId,
-                DailyTaskId = id,
-                Title = task.Title,
-                Description = $"Görevi tamamlamayı unutma! ⏱ Tahmini süre: {task.EstimatedMinutes} dk",
-                ReminderDate = reminderTime,
-                IsCompleted = false
-            };
-            await _context.Reminders.AddAsync(reminder);
-
-            await _context.SaveChangesAsync();
-
-            // Seçim onayı push bildirimi (anlık)
-            var deviceTokens = await _context.DeviceTokens
-                .Where(dt => dt.UserId == userId)
-                .Select(dt => dt.Token)
-                .ToListAsync();
-
-            foreach (var token in deviceTokens)
-            {
-                try
-                {
-                    await _firebaseService.SendNotificationAsync(
-                        token,
-                        $"✅ Görev Seçildi: {task.Title}",
-                        $"Harika! {task.EstimatedMinutes} dakikada tamamlayabilirsin. 💪 Başarılar!");
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Push notification gönderilemedi, UserId: {UserId}", userId);
-                }
+                if (result.StatusCode == 404) return NotFound();
+                if (result.StatusCode == 403) return Forbid();
+                return BadRequest(new { message = result.Error });
             }
 
-            return Ok(new { message = "Task selected.", taskId = id, selectionId = selection.Id, reminderAt = reminderTime });
+            var data = result.Data!;
+            if (data.SelectionId == 0)
+                return Ok(new { message = "Task already selected.", taskId = data.TaskId });
+
+            return Ok(new { message = "Task selected.", taskId = data.TaskId, selectionId = data.SelectionId, reminderAt = data.ReminderAt });
         }
 
         /// <summary>
@@ -127,28 +55,17 @@ namespace GrowtTracker.API.Controllers
         [HttpPost("{id:int}/complete")]
         public async Task<IActionResult> CompleteTask(int id, [FromQuery] Guid userId)
         {
-            var task = await _context.DailyTasks.FindAsync(id);
-            if (task == null)
-                return NotFound();
+            var result = await _dailyTaskService.CompleteTaskAsync(id, userId);
 
-            if (task.UserId != userId)
-                return Forbid();
-
-            task.IsCompleted = true;
-            task.CompletedAt = DateTime.UtcNow;
-
-            var selection = await _context.TaskSelections
-                .FirstOrDefaultAsync(ts => ts.DailyTaskId == id && ts.UserId == userId && ts.Status == TaskSelectionStatus.Active);
-
-            if (selection != null)
+            if (!result.IsSuccess)
             {
-                selection.Status = TaskSelectionStatus.Completed;
-                selection.CompletedAt = DateTime.UtcNow;
+                if (result.StatusCode == 404) return NotFound();
+                if (result.StatusCode == 403) return Forbid();
+                return BadRequest(new { message = result.Error });
             }
 
-            await _context.SaveChangesAsync();
-
-            return Ok(new { message = "Task completed.", taskId = id, completedAt = task.CompletedAt });
+            var data = result.Data!;
+            return Ok(new { message = "Task completed.", taskId = data.TaskId, completedAt = data.CompletedAt });
         }
 
         /// <summary>
@@ -157,13 +74,7 @@ namespace GrowtTracker.API.Controllers
         [HttpGet("history")]
         public async Task<IActionResult> GetHistory([FromQuery] Guid userId, [FromQuery] int days = 30)
         {
-            var since = DateTime.UtcNow.Date.AddDays(-days);
-            var tasks = await _context.DailyTasks
-                .Where(t => t.UserId == userId && t.IsCompleted && t.CompletedAt >= since)
-                .OrderByDescending(t => t.CompletedAt)
-                .AsNoTracking()
-                .ToListAsync();
-
+            var tasks = await _dailyTaskService.GetHistoryAsync(userId, days);
             return Ok(tasks);
         }
 
@@ -173,21 +84,8 @@ namespace GrowtTracker.API.Controllers
         [HttpGet("stats")]
         public async Task<IActionResult> GetStats([FromQuery] Guid userId)
         {
-            var stats = await _context.DailyTasks
-                .Where(t => t.UserId == userId && t.IsCompleted)
-                .GroupBy(t => t.Category)
-                .Select(g => new
-                {
-                    Category = g.Key,
-                    CompletedCount = g.Count(),
-                    TotalMinutes = g.Sum(t => t.EstimatedMinutes)
-                })
-                .ToListAsync();
-
-            var totalCompleted = await _context.DailyTasks
-                .CountAsync(t => t.UserId == userId && t.IsCompleted);
-
-            return Ok(new { totalCompleted, byCategory = stats });
+            var stats = await _dailyTaskService.GetStatsAsync(userId);
+            return Ok(new { totalCompleted = stats.TotalCompleted, byCategory = stats.ByCategory });
         }
 
         /// <summary>
@@ -196,7 +94,7 @@ namespace GrowtTracker.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAllTasks()
         {
-            var tasks = await _context.DailyTasks.AsNoTracking().ToListAsync();
+            var tasks = await _dailyTaskService.GetAllTasksAsync();
             return Ok(tasks);
         }
 
@@ -204,77 +102,14 @@ namespace GrowtTracker.API.Controllers
         /// AI öneri kartını DailyTask olarak kaydeder ve seçili olarak işaretler.
         /// </summary>
         [HttpPost("from-suggestion")]
-        public async Task<IActionResult> CreateAndSelectFromSuggestion([FromQuery] Guid userId, [FromBody] GrowthTracker.API.Dtos.TaskSuggestionDto suggestion)
+        public async Task<IActionResult> CreateAndSelectFromSuggestion([FromQuery] Guid userId, [FromBody] TaskSuggestionDto suggestion)
         {
-            // Bugün tamamlanan görev sayısı >= 3 ise yeni seçime izin verme
-            var today = DateTime.UtcNow.Date;
-            var completedToday = await _context.DailyTasks
-                .CountAsync(t => t.UserId == userId && t.IsCompleted && t.CompletedAt.HasValue && t.CompletedAt.Value.Date == today);
+            var result = await _dailyTaskService.CreateAndSelectFromSuggestionAsync(userId, suggestion);
 
-            if (completedToday >= 3)
-                return BadRequest(new { message = "Günlük hedefe ulaştın! Bugün en fazla 3 görev tamamlayabilirsin.", completedToday });
+            if (!result.IsSuccess)
+                return BadRequest(new { message = result.Error });
 
-            // Daha önce aktif seçim varsa Skipped yap
-            var existingSelection = await _context.TaskSelections
-                .FirstOrDefaultAsync(ts => ts.UserId == userId && ts.Status == TaskSelectionStatus.Active);
-            if (existingSelection != null)
-                existingSelection.Status = TaskSelectionStatus.Skipped;
-
-            var task = new DailyTask
-            {
-                UserId = userId,
-                Title = suggestion.Title,
-                Description = suggestion.Description,
-                Category = suggestion.Category,
-                EstimatedMinutes = suggestion.EstimatedMinutes,
-                IsSelected = true,
-                CreatedAt = DateTime.UtcNow
-            };
-            await _context.DailyTasks.AddAsync(task);
-            await _context.SaveChangesAsync();
-
-            var selection = new TaskSelection
-            {
-                UserId = userId,
-                DailyTaskId = task.Id,
-                SelectedAt = DateTime.UtcNow,
-                Status = TaskSelectionStatus.Active
-            };
-            await _context.TaskSelections.AddAsync(selection);
-
-            var reminderTime = DateTime.UtcNow.AddMinutes(task.EstimatedMinutes > 0 ? task.EstimatedMinutes : 30);
-            var reminder = new Reminder
-            {
-                UserId = userId,
-                DailyTaskId = task.Id,
-                Title = task.Title,
-                Description = $"Görevi tamamlamayı unutma! ⏱ Tahmini süre: {task.EstimatedMinutes} dk",
-                ReminderDate = reminderTime,
-                IsCompleted = false
-            };
-            await _context.Reminders.AddAsync(reminder);
-            await _context.SaveChangesAsync();
-
-            var deviceTokens = await _context.DeviceTokens
-                .Where(dt => dt.UserId == userId)
-                .Select(dt => dt.Token)
-                .ToListAsync();
-
-            foreach (var token in deviceTokens)
-            {
-                try
-                {
-                    await _firebaseService.SendNotificationAsync(
-                        token,
-                        $"✅ Görev Seçildi: {task.Title}",
-                        $"Harika! {task.EstimatedMinutes} dakikada tamamlayabilirsin. 💪 Başarılar!");
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Push notification gönderilemedi, UserId: {UserId}", userId);
-                }
-            }
-
+            var task = result.Data!;
             return Ok(new
             {
                 task.Id,

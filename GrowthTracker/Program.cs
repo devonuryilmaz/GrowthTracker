@@ -31,7 +31,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddHttpClient<NotificationService>();
+
 
 // Background services'ı DI container'a ekle
 builder.Services.AddScoped<ReminderJob>();
@@ -41,6 +41,8 @@ builder.Services.AddScoped<OpenAIService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IFirebaseService, FirebaseService>();
 builder.Services.AddScoped<IDeviceTokenService, DeviceTokenService>();
+builder.Services.AddScoped<IDailyTaskService, DailyTaskService>();
+builder.Services.AddScoped<IReminderService, ReminderService>();
 
 builder.Services.AddHangfire(config => config
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)

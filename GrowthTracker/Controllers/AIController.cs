@@ -1,8 +1,6 @@
-using GrowthTracker.API.Data;
 using GrowthTracker.API.Interfaces;
 using GrowthTracker.API.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace GrowthTracker.API.Controllers
 {
@@ -12,13 +10,13 @@ namespace GrowthTracker.API.Controllers
     {
         private readonly OpenAIService _openAIService;
         private readonly IUserService _userService;
-        private readonly AppDbContext _context;
+        private readonly IDailyTaskService _dailyTaskService;
 
-        public AIController(OpenAIService openAIService, IUserService userService, AppDbContext context)
+        public AIController(OpenAIService openAIService, IUserService userService, IDailyTaskService dailyTaskService)
         {
             _openAIService = openAIService;
             _userService = userService;
-            _context = context;
+            _dailyTaskService = dailyTaskService;
         }
 
         /// <summary>
@@ -50,9 +48,7 @@ namespace GrowthTracker.API.Controllers
             if (user == null)
                 return NotFound("User not found.");
 
-            var task = await _context.DailyTasks
-                .AsNoTracking()
-                .FirstOrDefaultAsync(t => t.Id == taskId && t.UserId == userId);
+            var task = await _dailyTaskService.GetTaskByIdAsync(taskId, userId);
 
             if (task == null)
                 return NotFound("Task not found.");
