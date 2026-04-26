@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -719,31 +719,6 @@ class _JourneyScreenState extends State<JourneyScreen> {
 
   Widget _buildAttributeBalance(Map<String, dynamic>? stats) {
     final byCategory = stats?['byCategory'] as List<dynamic>? ?? [];
-
-    // Sabit 6 kategori — API'den gelen veriyle eşleştir
-    const allCategories = [
-      ('Sağlık', 'sağlık'),
-      ('Kariyer', 'kariyer'),
-      ('Zihinsel', 'zihinsel'),
-      ('Öğrenme', 'öğrenme'),
-      ('Mindfulness', 'mindfulness'),
-      ('Finansal', 'finansal'),
-    ];
-
-    Map<String, Map<String, dynamic>> lookup = {};
-    for (final item in byCategory) {
-      final key = (item['category'] as String? ?? '').toLowerCase();
-      lookup[key] = Map<String, dynamic>.from(item as Map);
-    }
-
-    String _formatTime(int minutes) {
-      if (minutes == 0) return '—';
-      if (minutes < 60) return '${minutes}dk';
-      final h = minutes ~/ 60;
-      final m = minutes % 60;
-      return m == 0 ? '${h}sa' : '${h}sa ${m}dk';
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -756,80 +731,7 @@ class _JourneyScreenState extends State<JourneyScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        GridView.count(
-          crossAxisCount: 3,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: EdgeInsets.zero,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-          childAspectRatio: 0.9,
-          children: allCategories.map((cat) {
-            final label = cat.$1;
-            final key = cat.$2;
-            final data = lookup[key];
-            final count = (data?['completedCount'] as num?)?.toInt() ?? 0;
-            final minutes = (data?['totalMinutes'] as num?)?.toInt() ?? 0;
-            final color = AppTheme.categoryColor(key);
-            final icon = AppTheme.categoryIcon(key);
-            final hasData = count > 0;
-
-            return Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color:
-                      hasData ? color.withOpacity(0.35) : AppColors.cardBorder,
-                ),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(hasData ? 0.18 : 0.07),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(icon,
-                        color: hasData ? color : color.withOpacity(0.35),
-                        size: 18),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color:
-                          hasData ? AppColors.textPrimary : AppColors.textMuted,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    hasData ? '$count görev' : '0 görev',
-                    style: TextStyle(
-                      color: hasData ? color : AppColors.textMuted,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  Text(
-                    _formatTime(minutes),
-                    style: const TextStyle(
-                      color: AppColors.textMuted,
-                      fontSize: 10,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }).toList(),
-        ),
+        _CategoryDonutChart(byCategory: byCategory),
       ],
     );
   }
@@ -862,64 +764,221 @@ class _WeeklyBarChart extends StatelessWidget {
           .length;
       return MapEntry(DateFormat('EEE').format(d), count);
     });
-    final maxCount = days.map((e) => e.value).reduce(math.max).clamp(1, 99999);
+    final maxY = (days.map((e) => e.value).fold(0, (a, b) => a > b ? a : b) + 1).toDouble();
 
     return SizedBox(
       height: 120,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: days.map((e) {
-          final ratio = e.value / maxCount;
-          return Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 3),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (e.value > 0)
-                    Text(
-                      '${e.value}',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    )
-                  else
-                    const SizedBox(height: 12),
-                  const SizedBox(height: 2),
-                  Flexible(
-                    child: FractionallySizedBox(
-                      heightFactor: ratio.clamp(0.05, 1.0),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: e.value > 0
-                              ? AppColors.gradientPrimary
-                              : const LinearGradient(
-                                  colors: [
-                                    Color(0xFFE0DCFF),
-                                    Color(0xFFE0DCFF)
-                                  ],
-                                ),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    e.key,
+      child: BarChart(
+        BarChartData(
+          alignment: BarChartAlignment.spaceAround,
+          maxY: maxY,
+          barTouchData: BarTouchData(
+            enabled: true,
+            touchTooltipData: BarTouchTooltipData(
+              getTooltipColor: (_) => AppColors.surface,
+              getTooltipItem: (group, groupIndex, rod, rodIndex) =>
+                  BarTooltipItem(
+                '${rod.toY.toInt()}',
+                const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+          titlesData: FlTitlesData(
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 18,
+                getTitlesWidget: (value, meta) {
+                  final i = value.toInt();
+                  if (i < 0 || i >= days.length) return const SizedBox();
+                  return Text(
+                    days[i].key,
                     style: const TextStyle(
                       color: AppColors.textMuted,
                       fontSize: 9,
                       fontWeight: FontWeight.w500,
                     ),
-                  ),
-                ],
+                  );
+                },
               ),
             ),
-          );
-        }).toList(),
+            leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          ),
+          borderData: FlBorderData(show: false),
+          gridData: FlGridData(
+            drawHorizontalLine: true,
+            horizontalInterval: 1,
+            getDrawingHorizontalLine: (_) => const FlLine(
+              color: Color(0xFF2A2640),
+              strokeWidth: 0.5,
+            ),
+            drawVerticalLine: false,
+          ),
+          barGroups: days.asMap().entries.map((entry) {
+            final i = entry.key;
+            final count = entry.value.value;
+            return BarChartGroupData(
+              x: i,
+              barRods: [
+                BarChartRodData(
+                  toY: count.toDouble(),
+                  width: 18,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+                  gradient: count > 0
+                      ? AppColors.gradientPrimary
+                      : const LinearGradient(
+                          colors: [Color(0xFF2A2640), Color(0xFF2A2640)],
+                        ),
+                ),
+              ],
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Category Donut Chart ──────────────────────────────────────────────────────
+
+class _CategoryDonutChart extends StatelessWidget {
+  final List<dynamic> byCategory;
+  const _CategoryDonutChart({required this.byCategory});
+
+  @override
+  Widget build(BuildContext context) {
+    const allCategories = [
+      ('Sağlık', 'sağlık'),
+      ('Kariyer', 'kariyer'),
+      ('Zihinsel', 'zihinsel'),
+      ('Öğrenme', 'öğrenme'),
+      ('Mindfulness', 'mindfulness'),
+      ('Finansal', 'finansal'),
+    ];
+
+    final countLookup = <String, int>{};
+    final minutesLookup = <String, int>{};
+    for (final item in byCategory) {
+      final key = (item['category'] as String? ?? '').toLowerCase();
+      countLookup[key] = (item['completedCount'] as num?)?.toInt() ?? 0;
+      minutesLookup[key] = (item['totalMinutes'] as num?)?.toInt() ?? 0;
+    }
+
+    final sections = <PieChartSectionData>[];
+    int total = 0;
+    for (final cat in allCategories) {
+      final count = countLookup[cat.$2] ?? 0;
+      if (count > 0) {
+        total += count;
+        sections.add(PieChartSectionData(
+          value: count.toDouble(),
+          color: AppTheme.categoryColor(cat.$2),
+          radius: 36,
+          showTitle: false,
+        ));
+      }
+    }
+    if (sections.isEmpty) {
+      sections.add(PieChartSectionData(
+        value: 1,
+        color: const Color(0xFF2A2640),
+        radius: 36,
+        showTitle: false,
+      ));
+    }
+
+    return SizedBox(
+      height: 140,
+      child: Row(
+        children: [
+          Expanded(
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                PieChart(
+                  PieChartData(
+                    sections: sections,
+                    centerSpaceRadius: 44,
+                    sectionsSpace: 2,
+                    startDegreeOffset: -90,
+                    pieTouchData: PieTouchData(enabled: false),
+                  ),
+                ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$total',
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const Text(
+                      'toplam',
+                      style: TextStyle(color: AppColors.textMuted, fontSize: 10),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: allCategories.map((cat) {
+              final count = countLookup[cat.$2] ?? 0;
+              final minutes = minutesLookup[cat.$2] ?? 0;
+              final color = AppTheme.categoryColor(cat.$2);
+              final timeLabel = minutes == 0
+                  ? ''
+                  : minutes < 60
+                      ? ' · ${minutes}dk'
+                      : ' · ${minutes ~/ 60}sa${minutes % 60 > 0 ? ' ${minutes % 60}dk' : ''}';
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: count > 0 ? color : color.withOpacity(0.25),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      cat.$1,
+                      style: TextStyle(
+                        color: count > 0 ? AppColors.textSecondary : AppColors.textMuted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      count > 0 ? '$count$timeLabel' : '—',
+                      style: TextStyle(
+                        color: count > 0 ? color : AppColors.textMuted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }

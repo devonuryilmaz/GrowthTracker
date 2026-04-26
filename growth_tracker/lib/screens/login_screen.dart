@@ -1,7 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:growth_tracker/providers/user_provider.dart';
 import 'package:growth_tracker/screens/main_shell.dart';
+import 'package:growth_tracker/services/api_service.dart';
 import 'package:growth_tracker/theme/app_theme.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -120,6 +123,16 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    // Yeni kullanıcı: onboarding sonrası userId artık mevcut, bekleyen token'ı kaydet
+    final prefs = await SharedPreferences.getInstance();
+    final fcmToken = prefs.getString('fcm_token');
+    final newUserId = context.read<UserProvider>().user?.id;
+    if (fcmToken != null && newUserId != null) {
+      final platform = Platform.isAndroid ? 'Android' : 'iOS';
+      await ApiService().sendTokenToServer(fcmToken, platform, userId: newUserId);
+    }
+
+    if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const MainShell()),
     );

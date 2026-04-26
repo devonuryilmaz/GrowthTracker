@@ -1,7 +1,7 @@
 # GrowthTracker — Yol Haritası & İş Takip Dokümanı
 
 > **Vizyon:** Her meslek grubuna hitap eden, AI destekli Kişisel Gelişim Koçu.  
-> **Son Güncelleme:** 20 Nisan 2026 (v3)
+> **Son Güncelleme:** 26 Nisan 2026 (v5)
 
 ---
 
@@ -35,11 +35,11 @@
 | DailyTask / AI Task modeli | ✅ Var | `lib/models/daily_task.dart`, `lib/models/task_selection.dart` |
 | Task Discovery ekranı | ✅ Var | 3 TaskCard, shimmer yükleme, seçim → TaskDetail → Home yönlendirme |
 | Aktif Görev paneli | ✅ Var | HomeScreen'de geri sayım timer ile aktif görev paneli |
-| Journey / Stats ekranı | ⚠️ Kısmi | Ekran var, API bağlantısı var; `fl_chart` ve `table_calendar` **eksik** — custom canvas ile çizilmiş |
-| Ayarlar ekranı | ⚠️ Kısmi | Profil düzenleme var; bildirim/dark mode toggle'ları UI'da var fakat **persist edilmiyor** |
+| Journey / Stats ekranı | ✅ Tam | `table_calendar` + `fl_chart` entegre edildi; `BarChart` (haftalık), `PieChart` donut (kategori dağılımı), renkli takvim |
+| Ayarlar ekranı | ✅ Var | Profil düzenleme var; bildirim/dark mode toggle'ları `SharedPreferences`'a persist ediliyor |
 | Backend'e user sync | ✅ Var | Onboarding ve Settings'ten `POST /api/users/sync` çağrılıyor |
-| DeviceToken kaydı | ⚠️ Hata | `sendTokenToServer` `userId: null` gönderiyor — push notification ReminderJob için token kullanıcıya bağlanamıyor |
-| Görev tamamlama feedback | ⚠️ Eksik | Tamamlama butonu var, `confetti` paketi **pubspec'e eklenmedi** |
+| DeviceToken kaydı | ✅ Düzeltildi | `sendTokenToServer` `userId` guard ile korunuyor; token SharedPrefs'e kaydedilip kullanıcı yüklendikten sonra gönderiliyor |
+| Görev tamamlama feedback | ✅ Var | `confetti` paketi eklendi, `ConfettiController` + `ConfettiWidget` `home.dart`'ta entegre edildi |
 | Named Routes | ⚠️ Eksik | `MaterialPageRoute` kullanılıyor, `MaterialApp.routes` tanımlanmadı |
 | Flutter NotificationService | ⚠️ Unused | `lib/services/notification_service.dart` mevcut ama hiçbir yerden çağrılmıyor |
 
@@ -111,7 +111,7 @@
 - [x] **4.2** `Program.cs`'deki ReminderJob recurring job kaydını aktif hale getir (yorum satırından çıkar)
 - [x] **4.3** Görev seçildiğinde o görev için otomatik bir `Reminder` kaydı oluştur (veya doğrudan `TaskSelection` üzerinden bildirim gönder)
 - [x] **4.4** Bildirim içeriğini zenginleştir: görev başlığı, süre, motivasyon mesajı
-- [ ] **4.5** `NotificationService`'deki eski FCM v1 legacy API'yi `FirebaseService` (Admin SDK) üzerinden çalışacak şekilde birleştir *(hâlâ iki ayrı servis mevcut)*
+- [x] **4.5** `NotificationService` (legacy FCM HTTP v1) silindi; `RemindersController` `IFirebaseService` (Admin SDK) zaten kullanan `ReminderJob` ile uyumlu hale getirildi *(dead code temizlendi)*
 
 ---
 
@@ -174,13 +174,13 @@
 ### FAZ 8 — Flutter: Home Screen (Aktif Görev Paneli)
 > **Hedef:** Kullanıcının aktif görevini her açılışta görüp tamamlayabildiği ana ekran.
 
-- [ ] **8.1** `HomeScreen`'i yeniden tasarla:
+- [x] **8.1** `HomeScreen`'i yeniden tasarla:
   - **Üst alan:** Selamlama ("Günaydın, {isim}! 👋") + tarih ✅
   - **Ana kart:** Seçilen aktif görevin detayı (başlık, açıklama, kategori, süre) ✅
   - **Geri sayım timer:** `estimatedMinutes * 60` saniye sayaç ✅
   - **"Tamamladım" butonu** — tıklandığında:
     - `POST /api/dailytasks/{id}/complete` çağrısı ✅
-    - Konfeti animasyonu (confetti package) ❌ *`confetti` paketi pubspec'e eklenmedi*
+    - Konfeti animasyonu (confetti package) ✅ *`confetti` paketi eklendi, `home.dart`'ta entegre edildi*
     - Tebrik mesajı ✅
   - **Alt alan:** Günlük progress bar (tamamlanan / toplam) ✅
 - [x] **8.2** Henüz görev seçilmemişse → Task Discovery'e yönlendir
@@ -192,13 +192,13 @@
 ### FAZ 9 — Flutter: Journey / Stats Ekranı (Gelişim Geçmişi)
 > **Hedef:** Kullanıcının geçmiş performansını görselleştirerek motivasyon sağla.
 
-- [ ] **9.1** `JourneyScreen` oluştur:
-  - **Takvim görünümü:** Tamamlanan günler işaretli (streak/seri desteği) ❌ *`table_calendar` paketi yok, takvim widget'ı implement edilmedi*
+- [x] **9.1** `JourneyScreen` oluştur:
+  - **Takvim görünümü:** Tamamlanan günler işaretli (streak/seri desteği) ✅ *`table_calendar` ile `eventLoader` + `calendarBuilders` + renkli dot'lar entegre edildi*
   - **Liste görünümü:** Geçmiş görevler tarih sıralı ✅
   - Takvim/liste arasında toggle ✅ *(görünüm toggle'ı mevcut)*
-- [ ] **9.2** Kategori bazlı istatistik grafikleri:
-  - Pasta grafik veya bar chart (fl_chart paketi) ❌ *`fl_chart` paketi pubspec'e **eklenmedi**; özel canvas ile `dart:ui` kullanılıyor*
-  - Kariyer: X görev, Sağlık: Y görev vb. ✅ *(custom canvas chart ile)*
+- [x] **9.2** Kategori bazlı istatistik grafikleri:
+  - Pasta grafik veya bar chart (fl_chart paketi) ✅ *`fl_chart: ^0.69.2` eklendi; `_WeeklyBarChart` → `BarChart`, `_CategoryDonutChart` → `PieChart` donut*
+  - Kariyer: X görev, Sağlık: Y görev vb. ✅
 - [x] **9.3** Toplam tamamlama sayısı, en uzun seri, bu haftaki performans gibi özet kartlar
 - [x] **9.4** `GET /api/dailytasks/history` ve `GET /api/dailytasks/stats` entegrasyonu
 
@@ -229,7 +229,7 @@
 - [x] **11.3** Uygulama teması (ThemeData) — tutarlı renk paleti, tipografi, kart stilleri (`app_theme.dart`)
 - [x] **11.4** Splash screen + ilk yükleme akışı (auth check → onboarding / home)
 - [ ] **11.5** Hata durumları için genel error widget'ları
-- [ ] **11.6** `AddReminderScreen`'i `MainShell`'e bağla *(orphaned — hiçbir yoldan erişilemiyor)*
+- [x] **11.6** `AddReminderScreen` projeden kaldırıldı *(ekran silindi — bildirim yönetimi Settings ekranına taşındı)*
 
 ---
 
@@ -316,11 +316,11 @@
 
 - [ ] **12.1** Backend integration testleri: AI endpoint, Task CRUD, User sync
 - [ ] **12.2** Flutter widget testleri: Onboarding akışı, Task Discovery, Home Screen
-- [ ] **12.3** `confetti`, `fl_chart` ve `table_calendar` paketlerini pubspec'e ekle *(shimmer zaten mevcut değil — özel animasyon kullanılıyor)*
+- [x] **12.3** `confetti` ✅, `table_calendar` ✅, `fl_chart` ✅ — üç paket de pubspec'e eklendi ve entegre edildi
 - [ ] **12.4** Uçtan uca test: Onboarding → AI suggestion → Task select → Complete → Stats görüntüleme
 - [x] **12.5** README.md güncellemesi: Yeni mimari, kurulum adımları, ekran görüntüleri
-- [ ] **12.6** Settings ekranındaki bildirim/dark-mode toggle'larını persist et (SharedPreferences)
-- [ ] **12.7** `sendTokenToServer` null userId sorununu düzelt — token kaydı kullanıcı giriş sonrasına taşı
+- [x] **12.6** Settings ekranındaki bildirim/dark-mode toggle'larını persist et (SharedPreferences)
+- [x] **12.7** `sendTokenToServer` null userId sorununu düzelt — token kaydı kullanıcı giriş sonrasına taşı
 
 ---
 
@@ -364,9 +364,9 @@ FAZ 16 (Firebase Auth) — FAZ 6 (Onboarding) tamamlandıktan sonra; FAZ 14 ve 1
 | `firebase_core` + `firebase_messaging` | Push notification | ✅ Eklendi |
 | `flutter_local_notifications` | Yerel bildirim (kullanılmıyor) | ✅ Eklendi ama unused |
 | `intl` | Tarih formatlama | ✅ Eklendi |
-| `fl_chart` | İstatistik grafikleri | ❌ Eklenmedi |
-| `confetti` | Görev tamamlama kutlama animasyonu | ❌ Eklenmedi |
-| `table_calendar` | Takvim görünümü (Journey) | ❌ Eklenmedi |
+| `fl_chart` | İstatistik grafikleri | ✅ Eklendi |
+| `confetti` | Görev tamamlama kutlama animasyonu | ✅ Eklendi |
+| `table_calendar` | Takvim görünümü (Journey) | ✅ Eklendi |
 | `shimmer` | Yükleme placeholder animasyonları | ❌ Eklenmedi |
 | `smooth_page_indicator` | Onboarding adım göstergesi | ❌ Eklenmedi |
 | `firebase_auth` | Kullanıcı kimlik doğrulama (FAZ 16) | ❌ Eklenmedi |
@@ -386,10 +386,10 @@ FAZ 16 (Firebase Auth) — FAZ 6 (Onboarding) tamamlandıktan sonra; FAZ 14 ve 1
 ## 📝 Notlar
 
 - **CORS:** `AllowAll` politikası development için uygun, production'da kısıtlanmalı.
-- **NotificationService vs FirebaseService:** `NotificationService` eski HTTP-based FCM API (`"YOUR_SERVER_KEY"` hardcoded) kullanıyor — dead code. `FirebaseService` Admin SDK kullanıyor ve `ReminderJob` tarafından doğru şekilde kullanılıyor. FAZ 4.5'te `NotificationService` kaldırılmalı.
+- **NotificationService kaldırıldı:** `NotificationService.cs` silindi, `RemindersController` bağımlılığı temizlendi, `Program.cs` kaydı kaldırıldı. `FirebaseService` (Admin SDK) geçerli bildirim servisi.
 - **Flutter notification_service.dart:** `lib/services/notification_service.dart` mevcut ama `main.dart` veya hiçbir provider'dan çağrılmıyor — dead code.
 - **DeviceToken null userId:** `main.dart`'taki `sendTokenToServer` fonksiyonu `userId: null` gönderiyor. `ReminderJob` device token'ı kullanıcıya göre sorgulayacağından push notification çalışmaz. Token kaydı, kullanıcı `SharedPreferences`'tan yüklendikten sonra yapılmalı.
-- **AddReminderScreen orphaned:** `MainShell` veya herhangi bir ekran bu ekrana navigate etmiyor. FAZ 11.6'da MainShell'e entegre edilmeli.
+- **AddReminderScreen kaldırıldı:** Ekran projeden silindi; bildirim yönetimi Settings ekranında kalıyor.
 - **Namespace typo:** `DailyTasksController` ve `DeviceTokenController` dosyalarında `GrowtTracker.API.Controllers` namespace'i yazılmış (`GrowthTracker` yerine `GrowtTracker`).
 - **AI Prompt dili:** OpenAI prompt'u Türkçe görev üretiyor (`gpt-4o`). Dil tercihi gelecekte eklenebilir.
 - **baseUrl hardcoded:** Flutter'da `http://localhost:5058/api` olarak sabit; fiziksel cihazda veya prod'da çalışmaz. Ortama göre konfigüre edilmeli.

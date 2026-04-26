@@ -118,7 +118,10 @@ class _MyAppState extends State<MyApp> {
     });
     print('FCM Token: $fcmToken');
     if (fcmToken != null) {
-      await apiService.sendTokenToServer(fcmToken, platform, userId: userId);
+      await prefs.setString('fcm_token', fcmToken);
+      if (userId != null && userId.isNotEmpty) {
+        await apiService.sendTokenToServer(fcmToken, platform, userId: userId);
+      }
     }
 
     FirebaseMessaging.instance.onTokenRefresh.listen((event) async {
@@ -127,8 +130,11 @@ class _MyAppState extends State<MyApp> {
         token = event;
       });
       final refreshPrefs = await SharedPreferences.getInstance();
+      await refreshPrefs.setString('fcm_token', event);
       final String? refreshUserId = refreshPrefs.getString('userId');
-      await apiService.sendTokenToServer(event, platform, userId: refreshUserId);
+      if (refreshUserId != null && refreshUserId.isNotEmpty) {
+        await apiService.sendTokenToServer(event, platform, userId: refreshUserId);
+      }
     });
   }
 
@@ -183,6 +189,15 @@ class _AppStartupState extends State<_AppStartup> {
     if (userId != null && userId.isNotEmpty) {
       // Provider'ı doldur
       await context.read<UserProvider>().loadFromPrefs();
+      if (!mounted) return;
+
+      // Returning user: daha önce kaydedilmemiş token varsa kaydet
+      final fcmToken = prefs.getString('fcm_token');
+      if (fcmToken != null) {
+        final platform = Platform.isAndroid ? 'Android' : 'iOS';
+        await ApiService().sendTokenToServer(fcmToken, platform, userId: userId);
+      }
+
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const MainShell()),
